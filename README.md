@@ -1,0 +1,52 @@
+# Oil and gas value chain tracker
+
+Interactive world map of the oil and gas value chain: offshore and onshore fields, pipelines, ports,
+chokepoints, LNG export and import plants, floating terminals (FSRUs), refineries, gas-to-power demand
+and sea lanes. Every record carries a card with capacity, operator, who supplies it and who it delivers to.
+
+## How it is put together
+
+| Path | What it holds |
+| --- | --- |
+| `index.html` | Page shell and styles |
+| `js/config.js` | Database address and publishable key. Empty values mean "use the bundled snapshot" |
+| `js/loader.js` | Loads the data (live database first, snapshot as fallback) and starts the map |
+| `js/app.js` | Map logic: filters, chain tracing, cards, country view, timeline |
+| `data/snapshot.json` | Full copy of the dataset: assets, routes, links, country balances |
+| `data/pipelines.json` | Surveyed pipeline routes (Global Energy Monitor), simplified |
+| `data/world.json` | Country outlines (Natural Earth, through world-atlas) |
+| `img/satellite.jpg` | Satellite basemap (NASA Blue Marble) |
+| `supabase/migrations/0001_schema.sql` | Database tables and read-only access rules |
+| `supabase/seed.sql` | All records as SQL, generated from the snapshot |
+| `scripts/build-seed.mjs` | Regenerates the two SQL files from `data/snapshot.json` |
+
+## Database
+
+Five tables: `assets` (points), `routes` (named pipelines and sea lanes), `links` (supplied by / delivers to),
+`country_balances` and `category_defaults`. The page reads them with the publishable key. Row level security
+allows reading only, so nobody can change data from the website. Add or edit records in the Supabase table
+editor and they appear on the next page load.
+
+Adding a record:
+
+1. Add a row to `assets` with a unique `id` and `name`, a `category`, `lat`, `lon` and `status`.
+2. Add rows to `links` with the asset name as `subject`, `direction` `in` (supplied by) or `out` (delivers to),
+   and the counterparty. If the counterparty matches another record name exactly, it becomes a live link.
+3. Fill `source` and `checked_on` once the record has been verified. The card then shows it as checked.
+
+Codes: status `o` operating, `c` under construction, `p` planned, `x` offline. Categories are listed in the
+schema file.
+
+## Running it
+
+It is a static site. Serve the folder with any web server, for example `python3 -m http.server`, or publish
+it with GitHub Pages from the `main` branch root.
+
+## Data caveats
+
+- Compiled from public knowledge to mid-2026. Positions are approximate. Most figures are unverified:
+  each card states whether its record has been checked and against what.
+- Vessels are simulated along real trade lanes. They are not tracked positions.
+- Named pipelines and sea lanes are drawn schematically. The full pipeline network layer uses surveyed routes.
+- Pipeline routes come from Global Energy Monitor's oil and gas infrastructure trackers. Confirm their
+  licence terms before redistributing this data commercially.

@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Oil and gas value chain map</title>
+<meta name="description" content="Interactive world map of the oil and gas value chain: fields, pipelines, LNG, floating terminals, refineries and sea lanes.">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sea:#d3e2e6;--land:#f3f5f0;--border:#b4c4c6;--panel:#ffffff;--panel2:#eef3f3;--ink:#0f2830;--mute:#56707a;--line:#cfdcdd;
+  --crude:#c9731c;--gas:#0f93a8;--prod:#8a57cc;--ref:#b08c00;--lngx:#0b6fb8;--lngi:#3d9ad6;--fsru:#d1367e;--ons:#7a5a3a;--port:#0f2830;--choke:#d23b33;--off:#8b979b;--pwr:#5d8a12;
+  --halo:#ffffff;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --sea:#0a2029;--land:#17353e;--border:#2c5661;--panel:#0f2a33;--panel2:#16363f;--ink:#e7f1f1;--mute:#9bb4ba;--line:#24474f;
+  --crude:#f0a04a;--gas:#48c6d8;--prod:#b993f0;--ref:#f1d04b;--lngx:#5aa9ee;--lngi:#8cc6f2;--fsru:#f573ad;--ons:#c9a37c;--port:#f2f6f6;--choke:#ff6b61;--off:#7f9197;--halo:#0a2029;--pwr:#b9e25a;}}
+:root[data-theme="dark"]{
+  --sea:#0a2029;--land:#17353e;--border:#2c5661;--panel:#0f2a33;--panel2:#16363f;--ink:#e7f1f1;--mute:#9bb4ba;--line:#24474f;
+  --crude:#f0a04a;--gas:#48c6d8;--prod:#b993f0;--ref:#f1d04b;--lngx:#5aa9ee;--lngi:#8cc6f2;--fsru:#f573ad;--ons:#c9a37c;--port:#f2f6f6;--choke:#ff6b61;--off:#7f9197;--halo:#0a2029;--pwr:#b9e25a;}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--sea);color:var(--ink);font-family:Barlow,"Segoe UI",system-ui,sans-serif;font-size:15px;line-height:1.4;overflow:hidden}
+#app{position:relative;height:100%;overflow:hidden}
+svg#map{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab;background:var(--sea)}
+svg#map:active{cursor:grabbing}
+.land{fill:var(--land);stroke:var(--border);stroke-width:.6;vector-effect:non-scaling-stroke}
+.cb{fill:none;stroke:var(--border);stroke-width:.5;vector-effect:non-scaling-stroke}
+.sat .land{fill:none;stroke:rgba(255,255,255,.35)} .sat .cb{stroke:rgba(255,255,255,.28)}
+.sat{--pwr:#d4f57a;--halo:#04141a;--port:#fff;--crude:#ffb057;--gas:#5fe0f0;--prod:#cfa8ff;--ref:#ffe04f;--lngx:#7dbeff;--lngi:#b4dcff;--fsru:#ff86bb;--ons:#e6c39c;--choke:#ff6b61}
+.sat text{fill:#fff}
+.ln{fill:none;vector-effect:non-scaling-stroke;stroke-linecap:round;stroke-linejoin:round}
+.ln.poil{stroke:var(--crude);stroke-width:2}
+.ln.pgas{stroke:var(--gas);stroke-width:2}
+.ln.rcrude{stroke:var(--crude);stroke-width:1.2;stroke-dasharray:1 5;opacity:.85}
+.ln.rlng{stroke:var(--gas);stroke-width:1.2;stroke-dasharray:1 5;opacity:.85}
+.ln.rprod{stroke:var(--prod);stroke-width:1.2;stroke-dasharray:1 5;opacity:.85}
+.ln.st-c{stroke-dasharray:7 4}.ln.st-p{stroke-dasharray:2 5;opacity:.8}.ln.st-x{stroke:var(--off);stroke-dasharray:7 4}
+.hit{fill:none;stroke:transparent;stroke-width:14;vector-effect:non-scaling-stroke;cursor:pointer;pointer-events:stroke}
+.mk{cursor:pointer}
+.mk .g{stroke:var(--halo);stroke-width:1.2}
+.mk.st-c .g{fill-opacity:.25;stroke:var(--c);stroke-width:1.8;stroke-dasharray:3 2}
+.mk.st-p .g{fill:none;stroke:var(--c);stroke-width:1.6;stroke-dasharray:1.2 2.2}
+.mk.st-x .g{fill:var(--off)}
+.mk text{font:500 11px "Barlow Semi Condensed",Barlow,sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--halo);stroke-width:3px;stroke-linejoin:round;display:none;pointer-events:none}
+.lab .mk text{display:block}
+.mk.new .g{stroke:var(--ink);stroke-width:2.2}
+.ln.new{stroke-width:3.2}
+.mk.sel .g{stroke:var(--ink);stroke-width:2.4;stroke-dasharray:none}
+.ship{pointer-events:auto;cursor:pointer;stroke:var(--halo);stroke-width:.8}
+
+.land{cursor:pointer}.land.csel{fill:var(--panel2);stroke:var(--ink);stroke-width:1.6}
+.gem{fill:none;vector-effect:non-scaling-stroke;stroke-width:.8;opacity:.6;pointer-events:none;stroke-linejoin:round}
+.gem.g{stroke:var(--gas)}.gem.l{stroke:var(--crude)}
+.far .gem{stroke-width:.5;opacity:.45}
+.tracing .mk:not(.hl){opacity:.13}.tracing .ln:not(.hl){opacity:.08}.tracing .gem{opacity:.1}
+.ln.hl{stroke-width:3.6;opacity:1}.hlab .mk.hl text{display:block}
+.cl{cursor:pointer}.cl circle{fill:var(--panel);stroke:var(--ink);stroke-width:1.5}.cl text{font:700 12px "Barlow Semi Condensed",sans-serif;fill:var(--ink)}
+.io{margin:0 0 8px}.io h4{margin:0 0 2px;font:700 13px "Barlow Semi Condensed",sans-serif;color:var(--mute)}
+.io ul{list-style:none;margin:0;padding:0}.io li{padding:3px 0;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.io li span{color:var(--mute);font-size:12.5px}.io ul.typ li{color:var(--mute);font-style:italic}
+.lk{border:0;background:none;padding:2px 0;color:var(--lngx);font:600 15px Barlow,sans-serif;text-align:left;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+button.tag{cursor:pointer;color:var(--lngx);text-decoration:underline}
+.bal{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}.bal th{font:600 12.5px Barlow,sans-serif;color:var(--mute);text-align:right;padding:3px 0}.bal td{padding:5px 0;border-top:1px solid var(--line);text-align:right}.bal td:first-child{text-align:left;color:var(--mute);font-size:13px;max-width:120px}
+.bal .neg{color:var(--choke);font-weight:600}.bal .pos{color:var(--pwr);font-weight:600}
+/* chrome */
+#top{position:absolute;left:0;right:0;top:0;display:flex;gap:8px;padding:10px;align-items:flex-start;pointer-events:none;z-index:5}
+#top>*{pointer-events:auto}
+.brand{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;font:700 17px/1.15 "Barlow Semi Condensed",sans-serif;letter-spacing:.01em;white-space:nowrap}
+.brand small{display:block;font:400 12px Barlow,sans-serif;color:var(--mute)}
+#searchwrap{position:relative;flex:1;max-width:340px;min-width:0}
+#q{width:100%;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:0 12px;font:inherit}
+#res{position:absolute;top:48px;left:0;right:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:none;max-height:50vh;overflow-y:auto}
+#res button{display:block;width:100%;text-align:left;padding:9px 12px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);font:inherit;cursor:pointer}
+#res button span{color:var(--mute);font-size:13px}
+.btn{height:44px;min-width:44px;padding:0 13px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:600 15px "Barlow Semi Condensed",sans-serif;cursor:pointer}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--lngx);outline-offset:2px}
+#zoomc{position:absolute;right:10px;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:6px;z-index:4}
+#note{position:absolute;left:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));font-size:11.5px;color:var(--mute);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px 8px;max-width:calc(100% - 80px);z-index:3}
+/* panels */
+.panel{position:absolute;background:var(--panel);border:1px solid var(--line);z-index:6;display:flex;flex-direction:column}
+#filters{left:10px;top:70px;bottom:44px;width:320px;border-radius:12px}
+#card{right:10px;top:70px;width:350px;max-height:calc(100% - 140px);border-radius:12px;display:none}
+.panel header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 8px 14px;border-bottom:1px solid var(--line);font:700 17px "Barlow Semi Condensed",sans-serif}
+.panel .body{overflow-y:auto;padding:10px 14px 16px;-webkit-overflow-scrolling:touch}
+.x{width:36px;height:36px;border:0;background:none;color:var(--ink);font-size:22px;cursor:pointer;border-radius:8px}
+.hidden{display:none!important}
+h3{font:700 14px "Barlow Semi Condensed",sans-serif;margin:16px 0 4px;color:var(--mute);display:flex;justify-content:space-between;align-items:center}
+h3 button{border:0;background:none;color:var(--lngx);font:600 13px Barlow,sans-serif;cursor:pointer;padding:4px}
+.chain{display:grid;grid-template-columns:repeat(4,1fr);margin:2px 0 4px;position:relative}
+.chain:before{content:"";position:absolute;left:12%;right:12%;top:13px;height:4px;background:var(--line);border-radius:2px}
+.chain button{position:relative;border:0;background:none;color:var(--ink);font:600 12.5px "Barlow Semi Condensed",sans-serif;padding:0 0 2px;cursor:pointer}
+.chain i{display:block;width:22px;height:22px;margin:4px auto 4px;border-radius:50%;border:3px solid var(--ink);background:var(--ink)}
+.chain button[aria-pressed="false"] i{background:var(--panel)}
+.chain button[aria-pressed="mixed"] i{background:linear-gradient(90deg,var(--ink) 50%,var(--panel) 50%)}
+.row{display:flex;align-items:center;gap:9px;min-height:36px;cursor:pointer;border-radius:8px;padding:0 4px}
+.row input{width:18px;height:18px;accent-color:var(--ink);margin:0}
+.row svg{flex:none}
+.row b{font-weight:500;flex:1}
+.row em{font-style:normal;color:var(--mute);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:999px;padding:7px 11px;font:500 13.5px Barlow,sans-serif;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--ink)}
+.fine{font-size:12.5px;color:var(--mute);margin:12px 0 0}
+/* card */
+.tag{display:inline-block;font:600 12.5px "Barlow Semi Condensed",sans-serif;border-radius:6px;padding:2px 8px;margin:0 6px 6px 0;background:var(--panel2);border:1px solid var(--line)}
+.tag.kind{color:var(--panel);border-color:transparent}
+#card h2{font:700 21px/1.15 "Barlow Semi Condensed",sans-serif;margin:0 0 8px}
+dl{display:grid;grid-template-columns:96px 1fr;gap:6px 10px;margin:8px 0}
+dt{color:var(--mute);font-size:13px}dd{margin:0}
+.notep{margin:10px 0;padding-top:10px;border-top:1px solid var(--line)}
+.sl{display:inline-block;margin-top:4px;padding:9px 12px;border-radius:9px;background:var(--ink);color:var(--panel);text-decoration:none;font:600 14px "Barlow Semi Condensed",sans-serif}
+@media (max-width:860px){
+  .brand small{display:none}.brand{font-size:15px;padding:12px 10px}
+  #filters{left:0;right:0;width:auto;top:auto;bottom:0;max-height:72%;border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+  #card{left:0;right:0;width:auto;top:auto;bottom:0;max-height:58%;border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+  #note{display:none}
+}
+@media (max-width:520px){.brand{display:none}#searchwrap{max-width:none}}
+</style>
+</head>
+<body>
+<div id="app">
+<svg id="map" role="application" aria-label="World map of oil and gas infrastructure"><g id="root">
+  <image id="sat" x="0" y="0" width="2048" height="1024" preserveAspectRatio="none" style="display:none"/>
+  <g id="ctry"></g><path class="cb" id="cb"/>
+  <g id="gem"><path id="geml" class="gem l"/><path id="gemg" class="gem g"/></g>
+  <g id="lines"></g><g id="ships"></g><g id="marks"></g><g id="clus"></g>
+</g></svg>
+
+<div id="top">
+  <div class="brand">Oil and gas value chain<small>Fields, pipelines, LNG, refineries, sea lanes</small></div>
+  <div id="searchwrap"><input id="q" type="search" placeholder="Search a site, pipeline, owner or country" autocomplete="off" aria-label="Search"><div id="res"></div></div>
+  <button class="btn" id="bFilters" aria-pressed="true">Filters</button>
+  <button class="btn" id="bSat" aria-pressed="false">Satellite</button>
+</div>
+
+<aside class="panel" id="filters" aria-label="Filters">
+  <header><span>Show on map</span><button class="x" id="fx" aria-label="Close filters">&times;</button></header>
+  <div class="body">
+    <div class="chain" id="chain"></div>
+    <h3>Map as of <span id="yrv" style="color:var(--ink)"></span></h3>
+    <input type="range" id="yr" min="2026" max="2032" step="1" value="2026" aria-label="Year">
+    <p class="fine" style="margin:0">Slide forward to see projects switch on at their target start-up year. Newly started sites get a heavy outline.</p>
+    <div id="groups"></div>
+    <h3>Status</h3><div class="chips" id="stat"></div>
+    <h3>Quick views</h3><div class="chips" id="presets"></div>
+    <h3>Jump to region</h3><div class="chips" id="regions"></div>
+    <h3>Smallest refinery shown <span id="capv" style="color:var(--ink)"></span></h3>
+    <input type="range" id="cap" min="0" max="600" step="50" value="0" aria-label="Minimum refinery capacity">
+    <p class="fine">Reference data compiled to mid-2026 from public knowledge. Positions are approximate. Each card says whether its record has been checked. Vessels are simulated along real trade lanes, not live positions. Full pipeline network routes: Global Energy Monitor, Global Oil and Gas Infrastructure Trackers.</p>
+  </div>
+</aside>
+
+<aside class="panel" id="card" aria-live="polite">
+  <header><span id="ckind"></span><button class="x" id="cx" aria-label="Close details">&times;</button></header>
+  <div class="body" id="cbody"></div>
+</aside>
+
+<div id="zoomc"><button class="btn" id="zi" aria-label="Zoom in">+</button><button class="btn" id="zo" aria-label="Zoom out">&minus;</button><button class="btn" id="zw" aria-label="Whole world" style="font-size:12px">World</button></div>
+<div id="note">Loading map data</div>
+</div>
+
+<script src="vendor/d3.min.js"></script>
+<script src="vendor/topojson-client.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/loader.js"></script>
+</body>
+</html>
