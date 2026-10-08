@@ -78,8 +78,22 @@ const still=matchMedia('(prefers-reduced-motion:reduce)').matches;let last=0;
 function loop(n){if(n-last>70){last=n;tickShips(n)}requestAnimationFrame(loop)}
 // ---- zoom, sizing, clustering
 const gc=d3.select('#clus');let CL=[];
-const zoom=d3.zoom().scaleExtent([.3,90]).on('zoom',e=>{root.attr('transform',e.transform);K=e.transform.k;scaleMarks()}).on('end',cluster);
+const zoom=d3.zoom().scaleExtent([.3,90]).on('zoom',e=>{root.attr('transform',e.transform);K=e.transform.k;scaleMarks()}).on('end',()=>{cluster();tiles()});
 svg.call(zoom).on('dblclick.zoom',null);
+// ---- satellite tiles: Sentinel-2 cloudless (EOX), sharpens as you zoom, about 10 metres per pixel at full zoom
+const ZMAX=2000,TILE='https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless/default/WGS84/';
+let satOn=false;const gt=d3.select('#tiles'),TL=new Map();
+function tiles(){
+  if(!satOn){TL.forEach(e=>e.remove());TL.clear();return}
+  const t=d3.zoomTransform(svg.node()),[w,h]=size(),dpr=Math.min(2,window.devicePixelRatio||1);
+  const z=Math.min(13,Math.ceil(Math.log2(W*t.k*dpr/512)));const keep=new Set();
+  if(z>=4){const s=1024/2**z,nx=2**(z+1),ny=2**z;
+    const x0=Math.max(0,Math.floor(-t.x/t.k/s)),x1=Math.min(nx-1,Math.floor((w-t.x)/t.k/s)),y0=Math.max(0,Math.floor(-t.y/t.k/s)),y1=Math.min(ny-1,Math.floor((h-t.y)/t.k/s));
+    if((x1-x0+1)*(y1-y0+1)<=150)for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=z+'/'+y+'/'+x;keep.add(k);
+      if(!TL.has(k)){const el=gt.append('image').attr('href',TILE+k+'.jpg').attr('x',x*s).attr('y',y*s).attr('width',s*1.003).attr('height',s*1.003).attr('preserveAspectRatio','none').node();
+        el.addEventListener('error',()=>{el.remove();TL.delete(k)});TL.set(k,el)}}}
+  const old=[...TL.keys()].filter(k=>!keep.has(k));
+  setTimeout(()=>old.forEach(k=>{if(!keep.has(k)||!satOn){const e=TL.get(k);if(e){e.remove();TL.delete(k)}}}),keep.size?900:0)}
 function scaleMarks(){MS=Math.max(.5,Math.min(1.25,.45+K*.11))/K;
   for(const p of PTS)p.el.setAttribute('transform','translate('+p.x+','+p.y+') scale('+MS*p.sf+')');
   for(const c of CL)c.el.setAttribute('transform','translate('+c.x+','+c.y+') scale('+1/K+')');
@@ -94,12 +108,12 @@ function cluster(){gc.selectAll('*').remove();CL=[];for(const p of PTS)p.cl=fals
       c.el=g.node();CL.push(c)}}
   for(const p of PTS)p.el.style.display=(p.vis&&!p.cl)?'':'none'}
 function size(){const r=svg.node().getBoundingClientRect();return[r.width,r.height]}
-function setExtent(){const[w,h]=size();zoom.scaleExtent([Math.max(w/W,h/H),90]).translateExtent([[0,0],[W,H]])}
+function setExtent(){const[w,h]=size();zoom.scaleExtent([Math.max(w/W,h/H),ZMAX]).translateExtent([[0,0],[W,H]])}
 function fit(b,dur){const[w,h]=size();const x0=X(b[0]),x1=X(b[2]),y0=Y(b[3]),y1=Y(b[1]);
   const mob=w<=860;const padB=mob&&document.getElementById('card').style.display==='flex'?h*.5:0;
   const padL=!mob&&!document.getElementById('filters').classList.contains('hidden')?340:0;
   const padR=!mob&&document.getElementById('card').style.display==='flex'?370:0;
-  const k=Math.min(90,Math.max(zoom.scaleExtent()[0],.92*Math.min((w-padL-padR)/(x1-x0),(h-padB-70)/(y1-y0))));
+  const k=Math.min(ZMAX,Math.max(zoom.scaleExtent()[0],.92*Math.min((w-padL-padR)/(x1-x0),(h-padB-70)/(y1-y0))));
   svg.transition().duration(dur==null?700:dur).call(zoom.transform,d3.zoomIdentity.translate(padL+(w-padL-padR)/2-k*(x0+x1)/2,(h-padB+60)/2-k*(y0+y1)/2).scale(k))}
 function flyTo(lon,lat,k){fit([lon-180/k,lat-60/k,lon+180/k,lat+60/k])}
 // ---- filtering
@@ -197,7 +211,7 @@ res.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.dis
 // ---- toggles
 function togF(v){const f=document.getElementById('filters');const show=v==null?f.classList.contains('hidden'):v;f.classList.toggle('hidden',!show);document.getElementById('bFilters').setAttribute('aria-pressed',show)}
 document.getElementById('bFilters').onclick=()=>{const willShow=document.getElementById('filters').classList.contains('hidden');if(willShow&&innerWidth<=860)closeCard();togF()};document.getElementById('fx').onclick=()=>togF(false);
-let satOn=false;document.getElementById('bSat').onclick=function(){satOn=!satOn;const im=document.getElementById('sat');if(satOn&&!im.getAttribute('href'))im.setAttribute('href',SAT);im.style.display=satOn?'':'none';svg.classed('sat',satOn);this.setAttribute('aria-pressed',satOn)};
+document.getElementById('bSat').onclick=function(){satOn=!satOn;const im=document.getElementById('sat');if(satOn&&!im.getAttribute('href'))im.setAttribute('href',SAT);im.style.display=satOn?'':'none';svg.classed('sat',satOn);this.setAttribute('aria-pressed',satOn);tiles()};
 document.getElementById('zi').onclick=()=>svg.transition().duration(250).call(zoom.scaleBy,1.8);
 document.getElementById('zo').onclick=()=>svg.transition().duration(250).call(zoom.scaleBy,1/1.8);
 addEventListener('keydown',e=>{if(e.key==='Escape'){closeCard();res.style.display='none'}});

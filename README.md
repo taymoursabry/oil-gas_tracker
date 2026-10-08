@@ -15,7 +15,7 @@ and sea lanes. Every record carries a card with capacity, operator, who supplies
 | `data/snapshot.json` | Full copy of the dataset: assets, routes, links, country balances |
 | `data/pipelines.json` | Surveyed pipeline routes (Global Energy Monitor), simplified |
 | `data/world.json` | Country outlines (Natural Earth, through world-atlas) |
-| `img/satellite.jpg` | Satellite basemap (NASA Blue Marble) |
+| `img/satellite.jpg` | Coarse satellite basemap (NASA Blue Marble). Detailed imagery streams from EOX Sentinel-2 cloudless tiles (CC BY 4.0) as you zoom |
 | `supabase/migrations/0001_schema.sql` | Database tables and read-only access rules |
 | `supabase/seed.sql` | All records as SQL, generated from the snapshot |
 | `scripts/build-seed.mjs` | Regenerates the two SQL files from `data/snapshot.json` |

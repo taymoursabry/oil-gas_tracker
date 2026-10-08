@@ -127,6 +127,7 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
 <div id="app">
 <svg id="map" role="application" aria-label="World map of oil and gas infrastructure"><g id="root">
   <image id="sat" x="0" y="0" width="2048" height="1024" preserveAspectRatio="none" style="display:none"/>
+  <g id="tiles"></g>
   <g id="ctry"></g><path class="cb" id="cb"/>
   <g id="gem"><path id="geml" class="gem l"/><path id="gemg" class="gem g"/></g>
   <g id="lines"></g><g id="ships"></g><g id="marks"></g><g id="clus"></g>
@@ -152,7 +153,7 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
     <h3>Jump to region</h3><div class="chips" id="regions"></div>
     <h3>Smallest refinery shown <span id="capv" style="color:var(--ink)"></span></h3>
     <input type="range" id="cap" min="0" max="600" step="50" value="0" aria-label="Minimum refinery capacity">
-    <p class="fine">Reference data compiled to mid-2026 from public knowledge. Positions are approximate. Each card says whether its record has been checked. Vessels are simulated along real trade lanes, not live positions. Full pipeline network routes: Global Energy Monitor, Global Oil and Gas Infrastructure Trackers.</p>
+    <p class="fine">Reference data compiled to mid-2026 from public knowledge. Positions are approximate. Each card says whether its record has been checked. Vessels are simulated along real trade lanes, not live positions. Full pipeline network routes: Global Energy Monitor, Global Oil and Gas Infrastructure Trackers. Satellite imagery: Sentinel-2 cloudless by EOX, contains modified Copernicus Sentinel data 2016.</p>
   </div>
 </aside>
 
