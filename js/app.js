@@ -61,7 +61,7 @@ LNS.forEach(l=>{l.els=[];l.segs=[];
 const gm=d3.select('#marks');
 PTS.forEach(p=>{const c=CATS[p.cat];
   const g=gm.append('g').attr('style','--c:var('+c.c+')').html('<circle r="12" fill="transparent"/>'+GL[c.g]+'<text x="10" y="4"></text>');
-  g.select('.g').attr('fill','var('+c.c+')');g.select('text').text(p.name);
+  g.select('.g').attr('fill','var('+c.c+')');g.select('text').text(p.name).attr('transform','scale('+(1/p.sf).toFixed(3)+')').attr('x',(10*p.sf).toFixed(1)).attr('y',(4*p.sf).toFixed(1));
   g.on('click',e=>{e.stopPropagation();showPoint(p)});p.el=g.node();p.x=X(p.lon);p.y=Y(p.lat)});
 // ---- ships
 const gs=d3.select('#ships');const SHIPS=[];
@@ -78,7 +78,7 @@ const still=matchMedia('(prefers-reduced-motion:reduce)').matches;let last=0;
 function loop(n){if(n-last>70){last=n;tickShips(n)}requestAnimationFrame(loop)}
 // ---- zoom, sizing, clustering
 const gc=d3.select('#clus');let CL=[];
-const zoom=d3.zoom().scaleExtent([.3,90]).on('zoom',e=>{root.attr('transform',e.transform);K=e.transform.k;scaleMarks()}).on('end',()=>{cluster();tiles()});
+const zoom=d3.zoom().scaleExtent([.3,90]).on('zoom',e=>{root.attr('transform',e.transform);K=e.transform.k;scaleMarks()}).on('end',()=>{cluster();tiles();renderAn()});
 svg.call(zoom).on('dblclick.zoom',null);
 // ---- satellite tiles: Sentinel-2 cloudless (EOX), sharpens as you zoom, about 10 metres per pixel at full zoom
 const ZMAX=2000,TILE='https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless/default/WGS84/';
@@ -110,8 +110,8 @@ function cluster(){gc.selectAll('*').remove();CL=[];for(const p of PTS)p.cl=fals
 function size(){const r=svg.node().getBoundingClientRect();return[r.width,r.height]}
 function setExtent(){const[w,h]=size();zoom.scaleExtent([Math.max(w/W,h/H),ZMAX]).translateExtent([[0,0],[W,H]])}
 function fit(b,dur){const[w,h]=size();const x0=X(b[0]),x1=X(b[2]),y0=Y(b[3]),y1=Y(b[1]);
-  const mob=w<=860;const padB=mob&&document.getElementById('card').style.display==='flex'?h*.5:0;
-  const padL=!mob&&!document.getElementById('filters').classList.contains('hidden')?340:0;
+  const mob=w<=860;const padB=mob?(document.getElementById('card').style.display==='flex'?h*.5:60):0;
+  const padL=mob?0:leftPad();
   const padR=!mob&&document.getElementById('card').style.display==='flex'?370:0;
   const k=Math.min(ZMAX,Math.max(zoom.scaleExtent()[0],.92*Math.min((w-padL-padR)/(x1-x0),(h-padB-70)/(y1-y0))));
   svg.transition().duration(dur==null?700:dur).call(zoom.transform,d3.zoomIdentity.translate(padL+(w-padL-padR)/2-k*(x0+x1)/2,(h-padB+60)/2-k*(y0+y1)/2).scale(k))}
@@ -134,7 +134,7 @@ function apply(){
     document.querySelector('#chain [data-g="'+g+'"]').setAttribute('aria-pressed',n===0?'false':n===ks.length?'true':'mixed')});
   document.getElementById('capv').textContent=on.cap?on.cap+' thousand barrels/day':'All';
   document.getElementById('yrv').textContent=on.year===2026?'Today':on.year+' if targets hold';
-  cluster();if(still)tickShips(T0)}
+  cluster();if(still)tickShips(T0);renderAn()}
 function legend(k){const c=CATS[k];if(c.line)return'<svg width="26" height="14"><path d="M1 7H25" stroke="var('+c.c+')" stroke-width="'+(c.line===1?2.5:c.line===3?1:2)+'" '+(c.line===2?'stroke-dasharray="1 5" stroke-linecap="round"':'')+'/></svg>';
   return'<svg width="26" height="18" viewBox="-13 -9 26 18"><g style="--halo:transparent">'+GL[c.g].replace('class="g"','class="g" fill="var('+c.c+')"')+'</g></svg>'}
 const REG={'World':[-170,-58,180,78],'Middle East Gulf':[44,21,62,32],'Egypt and East Mediterranean':[24,25,38,37],'West Africa':[-20,-12,16,20],'Southern Africa':[8,-37,42,-15],'Europe':[-12,34,42,64],'Russia and Caspian':[28,36,110,74],'United States Gulf':[-104,23,-80,36],'South America':[-82,-56,-32,13],'South and East Asia':[66,-12,146,46],'Australia':[108,-42,156,-7]};
@@ -161,8 +161,8 @@ const REG={'World':[-170,-58,180,78],'Middle East Gulf':[44,21,62,32],'Egypt and
 // ---- cards
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function openCard(kind,color,html){document.getElementById('ckind').innerHTML='<span class="tag kind" style="background:var('+color+');margin:0">'+kind+'</span>';
-  document.getElementById('cbody').innerHTML=html;document.getElementById('card').style.display='flex';document.getElementById('cbody').scrollTop=0;if(innerWidth<=860)togF(false)}
-function closeCard(quiet){document.getElementById('card').style.display='none';sel=null;HL=new Set();tracing=false;CEL.forEach(c=>c.el.classList.remove('csel'));if(quiet!==true)apply()}
+  document.getElementById('cbody').innerHTML=html;document.getElementById('card').style.display='flex';document.getElementById('cbody').scrollTop=0;if(innerWidth<=860){togF(false);if(A.open)togA(false)}}
+function closeCard(quiet){document.getElementById('card').style.display='none';document.getElementById('card').classList.remove('tall');setHash('');A.co=null;sel=null;HL=new Set();tracing=false;CEL.forEach(c=>c.el.classList.remove('csel'));if(quiet!==true)apply()}
 function row(k,v){return v?'<dt>'+k+'</dt><dd>'+esc(v)+'</dd>':''}
 function linkList(title,arr,typ){let items=arr;let cls='';if(!items.length){if(!typ)return'';items=[typ];cls=' class="typ"'}
   return'<div class="io"><h4>'+title+'</h4><ul'+cls+'>'+items.map(t=>{const o=IDX.get(t);return o?'<li><button class="lk" data-n="'+esc(t)+'">'+esc(t)+'</button><span>'+KIND[o.cat]+'</span></li>':'<li>'+esc(t)+'</li>'}).join('')+'</ul></div>'}
@@ -176,11 +176,11 @@ function showPoint(p,fly){sel=p.el;CEL.forEach(c=>c.el.classList.remove('csel'))
    '<dl>'+row(capL,p.cap)+row(pw?'Gas supply':p.cat==='fsru'?'Terminal':'Operator',p.op)+row('Vessel owner',p.own)+row('Charterer',p.chr)+(p.cat==='fsru'&&p.term?row('Charter end',p.end?'About '+p.end+' (verify)':'No fixed end known'):'')+row(pw?'Import need':'Trade role',p.role)+(inprog?row('Start-up',p.yr?'Target '+p.yr+' (verify)':'No firm date'):'')+row('Position',p.lat.toFixed(2)+', '+p.lon.toFixed(2)+' (approximate)')+'</dl>'+
    ioBlock(p)+(p.term?'<p class="notep">'+esc(p.term)+'</p>':'')+(p.note?'<p class="notep">'+esc(p.note)+'</p>':'')+
    '<a class="sl" target="_blank" rel="noopener" href="https://www.google.com/maps/@'+p.lat+','+p.lon+',9000m/data=!3m1!1e3">Open site in satellite imagery</a>'+srcBlock(p));
-  apply();if(fly)flyTo(p.lon,p.lat,Math.max(K,40))}
+  setHash(p.id);apply();if(fly)flyTo(p.lon,p.lat,Math.max(K,40))}
 function showLine(l,fly){sel=null;CEL.forEach(c=>c.el.classList.remove('csel'));trace(l);const sea=CATS[l.cat].line===2;
   openCard(KIND[l.cat],CATS[l.cat].c,'<h2>'+esc(l.name)+'</h2><span class="tag">'+(sea?'Active trade lane':STN[l.st])+'</span><dl>'+row(sea?'Volume':'Capacity',l.cap)+((l.st==='c'||l.st==='p')?row('Start-up',l.yr?'Target '+l.yr+' (verify)':'No firm date'):'')+'</dl>'+ioBlock(l)+(l.note?'<p class="notep">'+esc(l.note)+'</p>':'')+
    '<p class="fine">Drawn schematically. For the surveyed route, switch on the full pipeline network layer.</p>'+srcBlock(l));
-  apply();if(fly){const a=l.paths.flat();fit([d3.min(a,d=>d[0])-3,d3.min(a,d=>d[1])-3,d3.max(a,d=>d[0])+3,d3.max(a,d=>d[1])+3])}}
+  setHash(l.id);apply();if(fly){const a=l.paths.flat();fit([d3.min(a,d=>d[0])-3,d3.min(a,d=>d[1])-3,d3.max(a,d=>d[0])+3,d3.max(a,d=>d[1])+3])}}
 function showShip(s){const v=VT[s.l.cat];sel=null;HL=new Set();tracing=false;openCard(v[0]+' (simulated)',CATS[s.l.cat].c,'<h2>'+v[0]+' on '+esc(s.l.name)+'</h2><span class="tag">Illustrative, not a tracked vessel</span><dl>'+row('Lane volume',s.l.cap)+'</dl><p class="notep">'+v[1]+' '+esc(s.l.note)+'</p><p class="fine">Live ship positions need a paid tracking feed.</p>');apply()}
 function fmt(n,u){return n?n+' '+u:'None'}
 function showCountry(n,fly){const c=CEL.get(n);const list=PTS.filter(p=>p.country.split(' / ').includes(n));sel=null;
@@ -209,16 +209,107 @@ q.addEventListener('input',()=>{const s=q.value.trim().toLowerCase();if(s.length
 res.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const h=res._h[+b.dataset.i];res.style.display='none';q.blur();
   h[0]==='c'?showCountry(h[1].name,true):h[0]==='p'?showPoint(h[1],true):showLine(h[1],true)});
 // ---- toggles
-function togF(v){const f=document.getElementById('filters');const show=v==null?f.classList.contains('hidden'):v;f.classList.toggle('hidden',!show);document.getElementById('bFilters').setAttribute('aria-pressed',show)}
+function togF(v){const f=document.getElementById('filters');const show=v==null?f.classList.contains('hidden'):v;if(show&&A.open)togA(false);f.classList.toggle('hidden',!show);document.getElementById('bFilters').setAttribute('aria-pressed',show)}
 document.getElementById('bFilters').onclick=()=>{const willShow=document.getElementById('filters').classList.contains('hidden');if(willShow&&innerWidth<=860)closeCard();togF()};document.getElementById('fx').onclick=()=>togF(false);
 document.getElementById('bSat').onclick=function(){satOn=!satOn;const im=document.getElementById('sat');if(satOn&&!im.getAttribute('href'))im.setAttribute('href',SAT);im.style.display=satOn?'':'none';svg.classed('sat',satOn);this.setAttribute('aria-pressed',satOn);tiles()};
 document.getElementById('zi').onclick=()=>svg.transition().duration(250).call(zoom.scaleBy,1.8);
 document.getElementById('zo').onclick=()=>svg.transition().duration(250).call(zoom.scaleBy,1/1.8);
 addEventListener('keydown',e=>{if(e.key==='Escape'){closeCard();res.style.display='none'}});
 addEventListener('resize',setExtent);
+// ---- analysis panel: totals in view, asset list, project pipeline, companies, charters
+const A={open:false,tab:'view',scope:'view',type:'all',sort:'cap',co:null};
+const NUM=p=>p.cat==='ref'?(p.kbd||0):p.cat==='lngx'?(parseFloat(p.cap)||0):0;
+const INPROG=p=>p.es==='c'||p.es==='p';
+function viewTest(){const t=d3.zoomTransform(svg.node()),[w,h]=size();const mob=w<=860;
+  const l=mob?0:leftPad(),x0=(l-t.x)/t.k,x1=(w-t.x)/t.k,y0=-t.y/t.k,y1=(h-t.y)/t.k;return p=>p.x>=x0&&p.x<=x1&&p.y>=y0&&p.y<=y1}
+function scoped(){if(A.scope==='all')return PTS.slice();const f=viewTest();return PTS.filter(f)}
+function companies(p){if(p.cat==='pwr'||p.cat==='choke'||p.cat==='port')return[];
+  const s=((p.op||'')+(p.own?' / '+p.own:'')).replace(/\(/g,' / ').replace(/\)/g,'');
+  return[...new Set(s.split(/\s*(?:\/|;|,|\bwith\b)\s*/).map(t=>t.replace(/-led|-backed| and partners| and others| consortium| minority| redevelopment| entering as operator/gi,'').trim())
+    .filter(t=>t.length>1&&!/^(state|many|others|owned|not assigned|not known|terminal users|partners|under federal trusteeship|brunei)$/i.test(t)))]}
+PTS.forEach(p=>p.cos=companies(p));
+const nf=(n,d)=>n.toLocaleString('en-GB',{maximumFractionDigits:d==null?0:d});
+const mbd=k=>nf(k/1000,1)+' million barrels/day';
+function sumBy(list,cat,pred){return d3.sum(list.filter(p=>p.cat===cat&&pred(p)),NUM)}
+function aRow(p,right){return'<li><div><button class="lk" data-n="'+esc(p.name)+'">'+esc(p.name)+'</button><span class="meta">'+KIND[p.cat]+(p.country?', '+esc(p.country):'')+(p.es!=='o'?', '+STN[p.es].toLowerCase():'')+'</span></div><span class="rt">'+esc(right||'')+'</span></li>'}
+function scopeBar(){return'<div class="seg" role="group" aria-label="Scope"><button data-scope="view" aria-pressed="'+(A.scope==='view')+'">Map window</button><button data-scope="all" aria-pressed="'+(A.scope==='all')+'">Whole world</button></div>'}
+function barChart(title,unit,rows,color){const max=d3.max(rows,r=>r[1])||1;
+  return'<div class="bc"><h4>'+title+'</h4>'+rows.map(r=>'<div class="bcr" title="'+r[0]+': '+nf(r[1],1)+' '+unit+'"><span class="bcl">'+r[0]+'</span><span class="bct"><i style="width:'+(r[1]/max*100).toFixed(1)+'%;background:var('+color+')"></i></span><span class="bcv">'+(r[1]?nf(r[1],1):'0')+'</span></div>').join('')+'<p class="fine" style="margin:2px 0 0">'+unit+', by target start-up year</p></div>'}
+function tile(label,big,small){return'<div class="tile"><span>'+label+'</span><b>'+big+'</b><em>'+small+'</em></div>'}
+function renderAn(){if(!A.open)return;const list=scoped();const body=document.getElementById('abody');let h='';
+  document.querySelectorAll('#atabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===A.tab));
+  if(A.tab==='view'){
+    const op=p=>p.es==='o',ip=INPROG;const fs=list.filter(p=>p.cat==='fsru');
+    h=scopeBar()+'<div class="tiles">'+
+     tile('Refining capacity',mbd(sumBy(list,'ref',op)),list.filter(p=>p.cat==='ref'&&op(p)).length+' operating sites. '+mbd(sumBy(list,'ref',ip))+' at sites in progress')+
+     tile('LNG export capacity',nf(sumBy(list,'lngx',op),1)+' million tonnes/year',list.filter(p=>p.cat==='lngx'&&op(p)).length+' operating plants. '+nf(sumBy(list,'lngx',ip),1)+' in progress')+
+     tile('LNG import points',list.filter(p=>p.cat==='lngi').length+' onshore, '+fs.length+' floating',fs.filter(p=>p.end&&p.end<=2028).length+' floating charters end by 2028')+
+     tile('Fields',list.filter(p=>p.cat==='oil'||p.cat==='gas').length+' offshore, '+list.filter(p=>p.cat==='ons').length+' onshore',list.filter(p=>(p.cat==='oil'||p.cat==='gas'||p.cat==='ons')&&ip(p)).length+' in development')+
+     tile('Gas-to-power demand',(n=>n+(n===1?' marker':' markers'))(list.filter(p=>p.cat==='pwr').length),list.filter(p=>p.cat==='pwr'&&/^High/.test(p.role||'')).length+' rated high import need')+
+     tile('Records checked',list.filter(p=>p.chk).length+' of '+list.length,'The rest are unverified. See each card')+'</div>';
+    const next=list.filter(p=>ip(p)&&p.yr).sort((a,b)=>a.yr-b.yr||NUM(b)-NUM(a)).slice(0,8);
+    h+='<h3>Starting up next</h3>'+(next.length?'<ul class="al">'+next.map(p=>aRow(p,'Target '+p.yr)).join('')+'</ul>':'<p class="fine">No dated projects in this window. Zoom out or switch to whole world.</p>');
+    h+='<p class="fine">Totals cover every asset type in scope, whatever layers are switched on. Capacities are gross nameplate and unverified unless the card says checked.</p>'}
+  else if(A.tab==='assets'){
+    let rows=list.filter(p=>A.type==='all'||p.cat===A.type);
+    const key={cap:p=>-NUM(p),name:p=>p.name,country:p=>p.country||'~',yr:p=>p.yr||9999,end:p=>p.end||9999}[A.sort];
+    rows.sort((a,b)=>{const x=key(a),y=key(b);return x<y?-1:x>y?1:a.name.localeCompare(b.name)});
+    h=scopeBar()+'<div class="ctl"><label>Type<select id="atype"><option value="all">All types</option>'+Object.keys(KIND).filter(k=>!CATS[k].line).map(k=>'<option value="'+k+'"'+(A.type===k?' selected':'')+'>'+KIND[k]+'</option>').join('')+'</select></label>'+
+     '<label>Sort by<select id="asort">'+[['cap','Capacity'],['name','Name'],['country','Country'],['yr','Start-up year'],['end','Charter end']].map(o=>'<option value="'+o[0]+'"'+(A.sort===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select></label></div>'+
+     '<div class="ctl"><span class="fine" style="margin:0">'+rows.length+' assets</span><button class="chip" id="acsv">Copy as spreadsheet rows</button></div>'+
+     (rows.length?'<ul class="al">'+rows.slice(0,200).map(p=>aRow(p,A.sort==='end'&&p.end?'Ends '+p.end:A.sort==='yr'&&p.yr?'Target '+p.yr:(p.cap||'').slice(0,40))).join('')+'</ul>':'<p class="fine">Nothing of this type in the map window. Zoom out or switch to whole world.</p>')+
+     (rows.length>200?'<p class="fine">Showing the first 200. Narrow the type or zoom in.</p>':'');
+    A.rows=rows}
+  else if(A.tab==='proj'){
+    const yrs=[2026,2027,2028,2029,2030,2031,2032];const pr=list.filter(p=>p.st==='c'||p.st==='p');
+    const by=(cat)=>yrs.map(y=>[String(y),d3.sum(pr.filter(p=>p.cat===cat&&p.yr===y),NUM)]);
+    const lines=A.scope==='all'?LNS.filter(l=>l.st==='c'||l.st==='p'):[];
+    h=scopeBar()+barChart('LNG export capacity starting up','Million tonnes/year',by('lngx'),'--lngx')+barChart('Refining capacity starting up','Thousand barrels/day',by('ref'),'--ref');
+    const all=pr.map(p=>[p.yr||0,p]).concat(lines.map(l=>[l.yr||0,l])).sort((a,b)=>(a[0]||9999)-(b[0]||9999));
+    let cur=null;h+='<h3>Projects by target year ('+all.length+')</h3><ul class="al">';
+    for(const[y,o]of all){if(y!==cur){cur=y;h+='</ul><h4 class="yh">'+(y||'No firm date')+'</h4><ul class="al">'}
+      h+=o.isP?aRow(o,(o.cap||'').slice(0,34)):'<li><div><button class="lk" data-n="'+esc(o.name)+'">'+esc(o.name)+'</button><span class="meta">'+KIND[o.cat]+', '+STN[o.st].toLowerCase()+'</span></div><span class="rt">'+esc((o.cap||'').slice(0,34))+'</span></li>'}
+    h+='</ul><p class="fine">Years are operator targets and slip often. For sites being expanded, the figure is the site total, not only the added capacity.</p>'}
+  else if(A.tab==='co'){
+    const m=new Map();for(const p of list)for(const c of p.cos){const e=m.get(c)||{n:c,a:[],ref:0,lng:0};e.a.push(p);if(p.cat==='ref')e.ref+=NUM(p);if(p.cat==='lngx')e.lng+=NUM(p);m.set(c,e)}
+    const cos=[...m.values()].filter(e=>e.a.length>1||A.co===e.n).sort((a,b)=>b.a.length-a.a.length||b.ref+b.lng*30-a.ref-a.lng*30);
+    const selc=A.co&&m.get(A.co);
+    h=scopeBar();
+    if(selc){h+='<div class="ctl"><h3 style="margin:0">'+esc(selc.n)+'</h3><button class="chip" id="acoback">All companies</button></div><p class="fine" style="margin:0 0 6px">'+selc.a.length+' sites'+(selc.ref?'. Refining '+nf(selc.ref)+' thousand barrels/day':'')+(selc.lng?'. LNG export '+nf(selc.lng,1)+' million tonnes/year':'')+'. Highlighted on the map.</p><ul class="al">'+selc.a.slice().sort((a,b)=>NUM(b)-NUM(a)).map(p=>aRow(p,(p.cap||'').slice(0,34))).join('')+'</ul>'}
+    else h+=(cos.length?'<ul class="al co">'+cos.slice(0,60).map(e=>'<li><div><button class="lk" data-co="'+esc(e.n)+'">'+esc(e.n)+'</button><span class="meta">'+e.a.length+' sites'+(e.ref?', refining '+nf(e.ref)+' thousand barrels/day':'')+(e.lng?', LNG export '+nf(e.lng,1)+' million tonnes/year':'')+'</span></div></li>').join('')+'</ul>':'<p class="fine">No company has two or more sites in this window. Zoom out or switch to whole world.</p>');
+    h+='<p class="fine">Gross capacity of sites a company operates, partners in or owns the vessel for. This is not equity share. Company names are read from the operator field and may split or merge imperfectly.</p>'}
+  else if(A.tab==='chart'){
+    const fs=list.filter(p=>p.cat==='fsru');const g=[['Ending by 2028',p=>p.end&&p.end<=2028],['Ending 2029 to 2032',p=>p.end>2028&&p.end<=2032],['Ending after 2032',p=>p.end>2032],['Owned outright or no fixed end known',p=>!p.end]];
+    h=scopeBar()+(fs.length?'':'<p class="fine">No floating terminals in this window. Zoom out or switch to whole world.</p>');
+    for(const[t,f]of g){const a=fs.filter(f).sort((x,y)=>(x.end||0)-(y.end||0));if(!a.length)continue;
+      h+='<h3>'+t+' ('+a.length+')</h3><ul class="al">'+a.map(p=>'<li><div><button class="lk" data-n="'+esc(p.name)+'">'+esc(p.name)+'</button><span class="meta">'+esc(p.country)+(p.own?'. Owner: '+esc(p.own):'')+(p.chr?'. Charterer: '+esc(p.chr):'')+(p.chk?'. Checked':'. Unverified')+'</span></div><span class="rt">'+(p.end?'About '+p.end:'')+'</span></li>').join('')+'</ul>'}
+    h+='<p class="fine">End years are indicative and come from public announcements. Where a site hosts several units, the earliest known end is shown. Verify before acting.</p>'}
+  body.innerHTML=h}
+function leftPad(){for(const id of['filters','analysis']){const e=document.getElementById(id);if(!e.classList.contains('hidden'))return e.offsetWidth+20}return 0}
+function togA(v){const a=document.getElementById('analysis');const show=v==null?a.classList.contains('hidden'):v;if(show){togF(false);if(innerWidth<=860&&document.getElementById('card').style.display==='flex')closeCard()}
+  a.classList.toggle('hidden',!show);A.open=show;document.getElementById('bAn').setAttribute('aria-pressed',show);if(show)renderAn()}
+document.getElementById('bAn').onclick=()=>togA();document.getElementById('ax').onclick=()=>togA(false);
+document.getElementById('atabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;A.tab=b.dataset.tab;document.getElementById('abody').scrollTop=0;renderAn()});
+document.getElementById('abody').addEventListener('change',e=>{if(e.target.id==='atype')A.type=e.target.value;if(e.target.id==='asort')A.sort=e.target.value;renderAn()});
+document.getElementById('abody').addEventListener('click',e=>{
+  const s=e.target.closest('[data-scope]');if(s){A.scope=s.dataset.scope;renderAn();return}
+  const c=e.target.closest('[data-co]');if(c){A.co=c.dataset.co;const a=PTS.filter(p=>p.cos.includes(A.co));sel=null;document.getElementById('card').style.display='none';HL=new Set(a);tracing=a.length>0;apply();
+    if(a.length&&A.scope==='all')fit([d3.min(a,p=>p.lon)-6,Math.max(-80,d3.min(a,p=>p.lat)-6),d3.max(a,p=>p.lon)+6,Math.min(84,d3.max(a,p=>p.lat)+6)]);return}
+  if(e.target.id==='acoback'){A.co=null;HL=new Set();tracing=false;apply();return}
+  if(e.target.id==='acsv'){const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+    const csv=[['Name','Type','Country','Status','Capacity','Operator','Start-up year','Vessel owner','Charterer','Charter end','Latitude','Longitude','Checked','Source']].concat((A.rows||[]).map(p=>[p.name,KIND[p.cat],p.country,STN[p.es],p.cap,p.op,p.yr,p.own,p.chr,p.end,p.lat,p.lon,p.chk||'No',p.src])).map(r=>r.map(q).join('\t')).join('\n');
+    const b=e.target;const done=t=>{b.textContent=t;setTimeout(()=>{b.textContent='Copy as spreadsheet rows'},1800)};
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(csv):Promise.reject()).then(()=>done('Copied. Paste into a spreadsheet'),()=>done('Copy was blocked by the browser'));return}
+  const n=e.target.closest('.lk[data-n]');if(n){const o=IDX.get(n.dataset.n);if(o){if(innerWidth<=860)togA(false);o.isP?showPoint(o,true):showLine(o,true)}}});
+// mobile: tap a sheet header to make it taller
+document.querySelectorAll('.panel header').forEach(h=>h.addEventListener('click',e=>{if(e.target.closest('button')||innerWidth>860)return;h.parentNode.classList.toggle('tall')}));
+document.getElementById('bWorld').onclick=()=>fit(REG.World);
+// deep link: #asset-id opens that record
+function setHash(id){try{history.replaceState(null,'',id?'#'+id:location.pathname+location.search)}catch(e){}}
 // ---- start
 setExtent();if(innerWidth<=860)togF(false);
 fit(innerWidth<=860?[-10,-8,80,52]:[-170,-58,180,78],0);scaleMarks();apply();
 if(still)tickShips(T0);else requestAnimationFrame(loop);
+{const id=decodeURIComponent(location.hash.slice(1));const o=id&&[...PTS,...LNS].find(x=>x.id===id);if(o)setTimeout(()=>o.isP?showPoint(o,true):showLine(o,true),300)}
 document.getElementById('note').textContent='Vessels simulated. Figures approximate. Data: '+(window.DATA_SOURCE||'bundled snapshot')+'.';
 

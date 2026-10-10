@@ -106,6 +106,37 @@ h3 button{border:0;background:none;color:var(--lngx);font:600 13px Barlow,sans-s
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
 input[type=range]{width:100%;accent-color:var(--ink)}
 .fine{font-size:12.5px;color:var(--mute);margin:12px 0 0}
+
+/* analysis */
+#acts{display:flex;gap:8px}
+#bWorld{display:none}
+#analysis{left:10px;top:70px;bottom:44px;width:min(520px,calc(100vw - 420px));min-width:380px;border-radius:12px}
+#atabs{display:flex;gap:2px;padding:6px 8px 0;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;flex:none}
+#atabs button{border:0;background:none;color:var(--mute);font:600 14.5px "Barlow Semi Condensed",sans-serif;padding:10px 10px 9px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+#atabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:10px}
+.seg button{border:0;background:var(--panel2);color:var(--ink);font:500 13.5px Barlow,sans-serif;padding:9px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.tile{border:1px solid var(--line);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile span{font:600 12.5px "Barlow Semi Condensed",sans-serif;color:var(--mute)}
+.tile b{font:700 18px/1.2 "Barlow Semi Condensed",sans-serif;font-variant-numeric:tabular-nums}
+.tile em{font-style:normal;font-size:12.5px;color:var(--mute)}
+.al{list-style:none;margin:0;padding:0}
+.al li{display:flex;gap:10px;justify-content:space-between;align-items:baseline;padding:7px 0;border-top:1px solid var(--line)}
+.al li>div{min-width:0}
+.al .meta{display:block;font-size:12.5px;color:var(--mute)}
+.al .rt{flex:none;max-width:44%;text-align:right;font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
+.yh{margin:12px 0 2px;font:700 15px "Barlow Semi Condensed",sans-serif}
+.ctl{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px}
+.ctl label{display:flex;flex-direction:column;gap:2px;font-size:12.5px;color:var(--mute);flex:1;min-width:130px}
+.ctl select{height:40px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;padding:0 8px}
+.bc{margin:4px 0 14px}.bc h4{margin:0 0 6px;font:700 14px "Barlow Semi Condensed",sans-serif}
+.bcr{display:grid;grid-template-columns:38px 1fr 52px;gap:8px;align-items:center;height:22px}
+.bcl,.bcv{font-size:12.5px;font-variant-numeric:tabular-nums}.bcl{color:var(--mute)}.bcv{text-align:right}
+.bct{height:12px;background:var(--panel2);border-radius:0 4px 4px 0}
+.bct i{display:block;height:100%;border-radius:0 4px 4px 0;min-width:0}
+@media (max-width:1000px) and (min-width:861px){#analysis{width:380px}}
 /* card */
 .tag{display:inline-block;font:600 12.5px "Barlow Semi Condensed",sans-serif;border-radius:6px;padding:2px 8px;margin:0 6px 6px 0;background:var(--panel2);border:1px solid var(--line)}
 .tag.kind{color:var(--panel);border-color:transparent}
@@ -115,12 +146,22 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
 .notep{margin:10px 0;padding-top:10px;border-top:1px solid var(--line)}
 .sl{display:inline-block;margin-top:4px;padding:9px 12px;border-radius:9px;background:var(--ink);color:var(--panel);text-decoration:none;font:600 14px "Barlow Semi Condensed",sans-serif}
 @media (max-width:860px){
-  .brand small{display:none}.brand{font-size:15px;padding:12px 10px}
-  #filters{left:0;right:0;width:auto;top:auto;bottom:0;max-height:72%;border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
-  #card{left:0;right:0;width:auto;top:auto;bottom:0;max-height:58%;border-radius:16px 16px 0 0;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .brand{display:none}#searchwrap{max-width:none}
+  #acts{position:fixed;left:0;right:0;bottom:0;z-index:8;display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--panel);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
+  #acts .btn{border-color:transparent;height:44px;padding:0 4px;font-size:14.5px}
+  #bWorld{display:block}#zoomc{display:none}
+  #analysis{left:0;right:0;width:auto;min-width:0;top:auto;bottom:var(--bar);max-height:72%;border-radius:16px 16px 0 0}
+  .panel{--bar:calc(57px + env(safe-area-inset-bottom,0px))}
+  .panel.tall{max-height:calc(100% - 70px)!important}
+  .panel header{cursor:pointer;padding-top:14px;position:relative}
+  .panel header:before{content:"";position:absolute;left:50%;top:5px;width:38px;height:4px;margin-left:-19px;border-radius:2px;background:var(--line)}
+  .row{min-height:44px}.lk{padding:6px 0}.x{width:44px;height:44px}
+  #atabs{padding:4px 4px 0}#atabs button{padding:11px 7px 10px;font-size:14px;flex:1}
+  #filters{left:0;right:0;width:auto;top:auto;bottom:var(--bar);max-height:72%;border-radius:16px 16px 0 0}
+  #card{left:0;right:0;width:auto;top:auto;bottom:var(--bar);max-height:52%;border-radius:16px 16px 0 0}
   #note{display:none}
 }
-@media (max-width:520px){.brand{display:none}#searchwrap{max-width:none}}
+
 </style>
 </head>
 <body>
@@ -136,8 +177,12 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
 <div id="top">
   <div class="brand">Oil and gas value chain<small>Fields, pipelines, LNG, refineries, sea lanes</small></div>
   <div id="searchwrap"><input id="q" type="search" placeholder="Search a site, pipeline, owner or country" autocomplete="off" aria-label="Search"><div id="res"></div></div>
-  <button class="btn" id="bFilters" aria-pressed="true">Filters</button>
-  <button class="btn" id="bSat" aria-pressed="false">Satellite</button>
+  <div id="acts">
+    <button class="btn" id="bFilters" aria-pressed="true">Filters</button>
+    <button class="btn" id="bAn" aria-pressed="false">Analysis</button>
+    <button class="btn" id="bSat" aria-pressed="false">Satellite</button>
+    <button class="btn" id="bWorld">World</button>
+  </div>
 </div>
 
 <aside class="panel" id="filters" aria-label="Filters">
@@ -155,6 +200,14 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
     <input type="range" id="cap" min="0" max="600" step="50" value="0" aria-label="Minimum refinery capacity">
     <p class="fine">Reference data compiled to mid-2026 from public knowledge. Positions are approximate. Each card says whether its record has been checked. Vessels are simulated along real trade lanes, not live positions. Full pipeline network routes: Global Energy Monitor, Global Oil and Gas Infrastructure Trackers. Satellite imagery: Sentinel-2 cloudless by EOX, contains modified Copernicus Sentinel data 2016.</p>
   </div>
+</aside>
+
+<aside class="panel hidden" id="analysis" aria-label="Analysis">
+  <header><span>Analysis</span><button class="x" id="ax" aria-label="Close analysis">&times;</button></header>
+  <div id="atabs" role="tablist">
+    <button role="tab" data-tab="view">Totals</button><button role="tab" data-tab="assets">Assets</button><button role="tab" data-tab="proj">Projects</button><button role="tab" data-tab="co">Companies</button><button role="tab" data-tab="chart">Charters</button>
+  </div>
+  <div class="body" id="abody"></div>
 </aside>
 
 <aside class="panel" id="card" aria-live="polite">

@@ -19,6 +19,16 @@ and sea lanes. Every record carries a card with capacity, operator, who supplies
 | `supabase/migrations/0001_schema.sql` | Database tables and read-only access rules |
 | `supabase/seed.sql` | All records as SQL, generated from the snapshot |
 | `scripts/build-seed.mjs` | Regenerates the two SQL files from `data/snapshot.json` |
+| `scripts/build-single-file.mjs` | Builds one self-contained HTML file for hosts that block outside files |
+
+## What an investor can do with it
+
+- **Totals:** refining and LNG capacity, import points and fields for the current map window or the whole world.
+- **Assets:** a sortable list of every record, with a button that copies it as spreadsheet rows.
+- **Projects:** capacity starting up by target year, and every project in progress grouped by year.
+- **Companies:** gross capacity by operator or partner. Selecting a company highlights its sites.
+- **Charters:** floating terminals grouped by when their charter ends.
+- **Links:** every record has its own address (`#record-id`), so a view can be shared.
 
 ## Database
 
