@@ -142,6 +142,11 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 #satctl p{margin:0;font-size:12.5px;color:var(--mute);flex-basis:100%}
 #satdate{height:38px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;padding:0 8px}
 .ship.lv{stroke-width:1}
+#focusbar{display:flex;gap:8px;align-items:center;justify-content:space-between;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:10px;font-size:13.5px}
+#focusbar .chip{flex:none;background:var(--panel)}
+.row.none{opacity:.45}
+.focus .ln.hl.soft{stroke-width:2.6}
+.focus .gem{opacity:.45}
 .gm{width:100%;height:240px;border:1px solid var(--line);border-radius:10px;margin:4px 0 8px;display:block}
 .nl{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:2px}.nl.sm{font-weight:500;font-size:12.5px;color:var(--lngx)}
 .lk.sm{font-size:12.5px;padding:0}
@@ -198,6 +203,7 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
 <aside class="panel" id="filters" aria-label="Filters">
   <header><span>Show on map</span><button class="x" id="fx" aria-label="Close filters">&times;</button></header>
   <div class="body">
+    <div id="focusbar" class="hidden"><span></span><button class="chip" id="focusclear">Clear focus</button></div>
     <div class="chain" id="chain"></div>
     <h3>Map as of <span id="yrv" style="color:var(--ink)"></span></h3>
     <input type="range" id="yr" min="2026" max="2032" step="1" value="2026" aria-label="Year">
