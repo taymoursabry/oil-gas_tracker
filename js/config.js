@@ -4,5 +4,8 @@
 window.TRACKER_CONFIG = {
   supabaseUrl: 'https://hnomtbmfxtyrmtoeuabr.supabase.co',
   supabaseKey: 'sb_publishable_GR7_GRTZ0YrOrVjASo3gCQ_ZiHE8BU8',
-  tablePrefix: 'og_'
+  tablePrefix: 'og_',
+  // Optional. A Google Maps Embed key shows a Google satellite view inside each record card.
+  // Restrict the key to this site's address in the Google Cloud console before adding it.
+  googleMapsKey: ''
 };

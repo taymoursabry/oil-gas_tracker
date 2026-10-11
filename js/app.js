@@ -81,14 +81,25 @@ const gc=d3.select('#clus');let CL=[];
 const zoom=d3.zoom().scaleExtent([.3,90]).on('zoom',e=>{root.attr('transform',e.transform);K=e.transform.k;scaleMarks()}).on('end',()=>{cluster();tiles();renderAn()});
 svg.call(zoom).on('dblclick.zoom',null);
 // ---- satellite tiles: Sentinel-2 cloudless (EOX), sharpens as you zoom, about 10 metres per pixel at full zoom
-const ZMAX=2000,TILE='https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless/default/WGS84/';
+const ZMAX=8000,ESRI='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/',TILE='https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless/default/WGS84/';
 let satOn=false;const gt=d3.select('#tiles'),TL=new Map();
 function tiles(){
   if(!satOn){gt.selectAll('*').remove();TL.clear();return}
   const layers=satLayers(),sig=layers.map(l=>l.k).join(',');
   if(gt.attr('data-sig')!==sig){gt.selectAll('*').remove();TL.clear();gt.attr('data-sig',sig);layers.forEach(l=>gt.append('g').attr('data-k',l.k))}
   const t=d3.zoomTransform(svg.node()),[w,h]=size(),dpr=Math.min(2,window.devicePixelRatio||1);const keep=new Set();
-  for(const L of layers){const z=Math.min(L.max,Math.ceil(Math.log2(L.base*t.k*dpr/L.px)));if(z<L.min)continue;
+  for(const L of layers){
+    if(L.merc){const z=Math.min(L.max,Math.round(Math.log2(W*t.k*dpr/256)));if(z<L.min)continue;const n=2**z,g=gt.select('g[data-k="'+L.k+'"]');
+      const lonA=(-t.x/t.k)/W*360-180,lonB=((w-t.x)/t.k)/W*360-180,latA=90-(-t.y/t.k)/H*180,latB=90-((h-t.y)/t.k)/H*180;
+      const my=la=>{const r=Math.max(-85,Math.min(85,la))*Math.PI/180;return(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n},ml=y=>Math.atan(Math.sinh(Math.PI*(1-2*y/n)))*180/Math.PI;
+      const x0=Math.max(0,Math.floor((lonA+180)/360*n)),x1=Math.min(n-1,Math.floor((lonB+180)/360*n)),y0=Math.max(0,Math.floor(my(latA))),y1=Math.min(n-1,Math.floor(my(latB)));
+      if((x1-x0+1)*(y1-y0+1)>L.cap)continue;
+      for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=L.k+'/'+z+'/'+y+'/'+x;keep.add(k);
+        if(!TL.has(k)){const px=X(x/n*360-180),py=Y(ml(y)),pw=W/n,ph=Y(ml(y+1))-py;
+          const el=g.append('image').attr('href',L.url(z,y,x)).attr('x',px).attr('y',py).attr('width',pw*1.002).attr('height',ph*1.002).attr('preserveAspectRatio','none').node();
+          el.addEventListener('error',()=>{el.remove()});TL.set(k,el)}}
+      continue}
+    const z=Math.min(L.max,Math.ceil(Math.log2(L.base*t.k*dpr/L.px)));if(z<L.min)continue;
     const s=L.base/2**z,nx=Math.ceil(W/s),ny=Math.ceil(H/s),g=gt.select('g[data-k="'+L.k+'"]');
     const x0=Math.max(0,Math.floor(-t.x/t.k/s)),x1=Math.min(nx-1,Math.floor((w-t.x)/t.k/s)),y0=Math.max(0,Math.floor(-t.y/t.k/s)),y1=Math.min(ny-1,Math.floor((h-t.y)/t.k/s));
     if((x1-x0+1)*(y1-y0+1)>L.cap)continue;
@@ -180,7 +191,8 @@ function showPoint(p,fly){sel=p.el;CEL.forEach(c=>c.el.classList.remove('csel'))
   openCard(KIND[p.cat],CATS[p.cat].c,'<h2>'+esc(p.name)+'</h2><span class="tag">'+STN[p.st]+'</span>'+(p.country?'<button class="tag lkc" data-c="'+esc(p.country.split(' / ')[0])+'">'+esc(p.country)+'</button>':'')+
    '<dl>'+row(capL,p.cap)+row(pw?'Gas supply':p.cat==='fsru'?'Terminal':'Operator',p.op)+row('Vessel owner',p.own)+row('Charterer',p.chr)+(p.cat==='fsru'&&p.term?row('Charter end',p.end?'About '+p.end+' (verify)':'No fixed end known'):'')+row(pw?'Import need':'Trade role',p.role)+(inprog?row('Start-up',p.yr?'Target '+p.yr+' (verify)':'No firm date'):'')+row('Position',p.lat.toFixed(2)+', '+p.lon.toFixed(2)+' (approximate)')+'</dl>'+
    ioBlock(p)+newsBlock(p)+(p.term?'<p class="notep">'+esc(p.term)+'</p>':'')+(p.note?'<p class="notep">'+esc(p.note)+'</p>':'')+
-   '<a class="sl" target="_blank" rel="noopener" href="https://www.google.com/maps/@'+p.lat+','+p.lon+',9000m/data=!3m1!1e3">Open site in satellite imagery</a>'+srcBlock(p));
+   ((window.TRACKER_CONFIG||{}).googleMapsKey?'<iframe class="gm" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" title="Google satellite view of '+esc(p.name)+'" src="https://www.google.com/maps/embed/v1/view?key='+encodeURIComponent(window.TRACKER_CONFIG.googleMapsKey)+'&center='+p.lat+','+p.lon+'&zoom=15&maptype=satellite"></iframe>':'')+
+   '<a class="sl" target="_blank" rel="noopener" href="https://www.google.com/maps/@'+p.lat+','+p.lon+',3000m/data=!3m1!1e3">Open in Google Maps satellite</a>'+srcBlock(p));
   setHash(p.id);apply();if(fly)flyTo(p.lon,p.lat,Math.max(K,40))}
 function showLine(l,fly){sel=null;CEL.forEach(c=>c.el.classList.remove('csel'));trace(l);const sea=CATS[l.cat].line===2;
   openCard(KIND[l.cat],CATS[l.cat].c,'<h2>'+esc(l.name)+'</h2><span class="tag">'+(sea?'Active trade lane':STN[l.st])+'</span><dl>'+row(sea?'Volume':'Capacity',l.cap)+((l.st==='c'||l.st==='p')?row('Start-up',l.yr?'Target '+l.yr+' (verify)':'No firm date'):'')+'</dl>'+ioBlock(l)+newsBlock(l)+(l.note?'<p class="notep">'+esc(l.note)+'</p>':'')+
@@ -220,7 +232,7 @@ function togF(v){const f=document.getElementById('filters');const show=v==null?f
 document.getElementById('bFilters').onclick=()=>{const willShow=document.getElementById('filters').classList.contains('hidden');if(willShow&&innerWidth<=860)closeCard();togF()};document.getElementById('fx').onclick=()=>togF(false);
 document.getElementById('bSat').onclick=function(){satOn=!satOn;const im=document.getElementById('sat');if(satOn&&!im.getAttribute('href'))im.setAttribute('href',SAT);im.style.display=satOn?'':'none';svg.classed('sat',satOn);this.setAttribute('aria-pressed',satOn);document.getElementById('satctl').classList.toggle('hidden',!satOn);tiles()};
 document.getElementById('satctl').addEventListener('click',e=>{const b=e.target.closest('[data-sat]');if(!b)return;SATM.mode=b.dataset.sat;document.querySelectorAll('#satctl [data-sat]').forEach(x=>x.setAttribute('aria-pressed',x===b));document.getElementById('satdate').classList.toggle('hidden',SATM.mode!=='daily');
-  document.getElementById('sathelp').textContent={sharp:'Cloud-free composite from 2016. Sharpest view, about 10 metres. Not current.',week:'Newest Landsat and Sentinel-2 passes from the past 8 days, about 30 metres. Zoom in to a site to load them. Cloud and gaps are normal.',daily:'One wide-area image per day, about 250 metres. Good for weather, smoke and large changes, not site detail.'}[SATM.mode];tiles()});
+  document.getElementById('sathelp').textContent={sharp:'High-resolution aerial and satellite imagery. Keep zooming in to see site detail. Image dates vary by place and can be several years old.',week:'Newest Landsat and Sentinel-2 passes from the past 8 days, about 30 metres. Zoom in to a site to load them. Cloud and gaps are normal.',daily:'One wide-area image per day, about 250 metres. Good for weather, smoke and large changes, not site detail.'}[SATM.mode];tiles()});
 document.getElementById('satdate').addEventListener('change',e=>{SATM.date=e.target.value||null;tiles()});
 {const sd=document.getElementById('satdate');sd.max=daysAgo(1);sd.min='2020-01-01';sd.value=daysAgo(1)}
 document.getElementById('zi').onclick=()=>svg.transition().duration(250).call(zoom.scaleBy,1.8);
@@ -257,7 +269,8 @@ function satLayers(){const sharp={k:'sharp',base:1024,px:256,max:13,min:4,cap:15
   if(SATM.mode==='daily'){const d=SATM.date||daysAgo(1);return[{k:'daily'+d,base:1638.4,px:512,max:8,min:1,cap:60,url:(z,y,x)=>G+'VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/'+d+'/250m/'+z+'/'+y+'/'+x+'.jpg'}]}
   if(SATM.mode==='week'){const out=[sharp];for(let i=9;i>=2;i--){const d=daysAgo(i);for(const L of['HLS_L30_Nadir_BRDF_Adjusted_Reflectance','HLS_S30_Nadir_BRDF_Adjusted_Reflectance'])
     out.push({k:L.slice(4,7)+d,base:1638.4,px:512,max:11,min:7,cap:12,url:(z,y,x)=>G+L+'/default/'+d+'/31.25m/'+z+'/'+y+'/'+x+'.png'})}return out}
-  return[sharp]}
+  // Detail: cloud-free composite when zoomed out, sub-metre aerial and satellite imagery when zoomed in.
+  return[sharp,{k:'detail',merc:true,min:10,max:18,cap:80,url:(z,y,x)=>ESRI+z+'/'+y+'/'+x}]}
 // ---- analysis panel: totals in view, asset list, project pipeline, companies, charters
 const A={open:false,tab:'view',scope:'view',type:'all',sort:'cap',co:null};
 const NUM=p=>p.cat==='ref'?(p.kbd||0):p.cat==='lngx'?(parseFloat(p.cap)||0):0;

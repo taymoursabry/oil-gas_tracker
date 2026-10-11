@@ -142,6 +142,7 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 #satctl p{margin:0;font-size:12.5px;color:var(--mute);flex-basis:100%}
 #satdate{height:38px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;padding:0 8px}
 .ship.lv{stroke-width:1}
+.gm{width:100%;height:240px;border:1px solid var(--line);border-radius:10px;margin:4px 0 8px;display:block}
 .nl{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:2px}.nl.sm{font-weight:500;font-size:12.5px;color:var(--lngx)}
 .lk.sm{font-size:12.5px;padding:0}
 .chg{display:block;font-size:14px;margin:2px 0}.chg s{color:var(--mute)}
@@ -207,7 +208,7 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
     <h3>Jump to region</h3><div class="chips" id="regions"></div>
     <h3>Smallest refinery shown <span id="capv" style="color:var(--ink)"></span></h3>
     <input type="range" id="cap" min="0" max="600" step="50" value="0" aria-label="Minimum refinery capacity">
-    <p class="fine">Reference data compiled to mid-2026 from public knowledge. Positions are approximate. Each card says whether its record has been checked. Vessels are simulated along real trade lanes, not live positions. Full pipeline network routes: Global Energy Monitor, Global Oil and Gas Infrastructure Trackers. Satellite imagery: Sentinel-2 cloudless by EOX, contains modified Copernicus Sentinel data 2016. Recent and daily imagery: NASA Global Imagery Browse Services.</p>
+    <p class="fine">Reference data compiled to mid-2026 from public knowledge. Positions are approximate. Each card says whether its record has been checked. Vessels are simulated along real trade lanes, not live positions. Full pipeline network routes: Global Energy Monitor, Global Oil and Gas Infrastructure Trackers. Satellite imagery: Sentinel-2 cloudless by EOX, contains modified Copernicus Sentinel data 2016. Detail imagery: Esri World Imagery and its data providers. Recent and daily imagery: NASA Global Imagery Browse Services.</p>
   </div>
 </aside>
 
@@ -226,9 +227,9 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
 
 <div id="zoomc"><button class="btn" id="zi" aria-label="Zoom in">+</button><button class="btn" id="zo" aria-label="Zoom out">&minus;</button><button class="btn" id="zw" aria-label="Whole world" style="font-size:12px">World</button></div>
 <div id="satctl" class="hidden" aria-label="Satellite imagery">
-  <div class="seg" role="group" aria-label="Imagery" style="margin:0"><button data-sat="sharp" aria-pressed="true">Sharp</button><button data-sat="week" aria-pressed="false">Past week</button><button data-sat="daily" aria-pressed="false">Daily</button></div>
+  <div class="seg" role="group" aria-label="Imagery" style="margin:0"><button data-sat="sharp" aria-pressed="true">Detail</button><button data-sat="week" aria-pressed="false">Past week</button><button data-sat="daily" aria-pressed="false">Daily</button></div>
   <input type="date" id="satdate" class="hidden" aria-label="Image date">
-  <p id="sathelp">Cloud-free composite from 2016. Sharpest view, about 10 metres. Not current.</p>
+  <p id="sathelp">High-resolution aerial and satellite imagery. Keep zooming in to see site detail. Image dates vary by place and can be several years old.</p>
 </div>
 <div id="note">Loading map data</div>
 </div>
