@@ -48,6 +48,17 @@ Adding a record:
 Codes: status `o` operating, `c` under construction, `p` planned, `x` offline. Categories are listed in the
 schema file.
 
+## News, review queue and live vessels
+
+- `og_news` holds dated, sourced headlines per record. A daily scheduled scan adds to it.
+- `og_change_proposals` is the review queue. The scan proposes changes; nothing is applied until a
+  proposal's `status` is set to `approved`, which updates the record and stamps it as checked.
+- `og_vessels` holds the latest position per tanker. The `ais-relay` function in
+  `supabase/functions` fills it from aisstream.io and needs an `AISSTREAM_API_KEY` secret.
+  Coverage is coastal only.
+- Satellite has three modes: a sharp cloud-free composite (2016), the newest passes from the past
+  week (about 30 metres), and a daily wide-area image (about 250 metres). The last two come from NASA.
+
 ## Running it
 
 It is a static site. Serve the folder with any web server, for example `python3 -m http.server`, or publish

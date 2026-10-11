@@ -84,19 +84,23 @@ svg.call(zoom).on('dblclick.zoom',null);
 const ZMAX=2000,TILE='https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless/default/WGS84/';
 let satOn=false;const gt=d3.select('#tiles'),TL=new Map();
 function tiles(){
-  if(!satOn){TL.forEach(e=>e.remove());TL.clear();return}
-  const t=d3.zoomTransform(svg.node()),[w,h]=size(),dpr=Math.min(2,window.devicePixelRatio||1);
-  const z=Math.min(13,Math.ceil(Math.log2(W*t.k*dpr/512)));const keep=new Set();
-  if(z>=4){const s=1024/2**z,nx=2**(z+1),ny=2**z;
+  if(!satOn){gt.selectAll('*').remove();TL.clear();return}
+  const layers=satLayers(),sig=layers.map(l=>l.k).join(',');
+  if(gt.attr('data-sig')!==sig){gt.selectAll('*').remove();TL.clear();gt.attr('data-sig',sig);layers.forEach(l=>gt.append('g').attr('data-k',l.k))}
+  const t=d3.zoomTransform(svg.node()),[w,h]=size(),dpr=Math.min(2,window.devicePixelRatio||1);const keep=new Set();
+  for(const L of layers){const z=Math.min(L.max,Math.ceil(Math.log2(L.base*t.k*dpr/L.px)));if(z<L.min)continue;
+    const s=L.base/2**z,nx=Math.ceil(W/s),ny=Math.ceil(H/s),g=gt.select('g[data-k="'+L.k+'"]');
     const x0=Math.max(0,Math.floor(-t.x/t.k/s)),x1=Math.min(nx-1,Math.floor((w-t.x)/t.k/s)),y0=Math.max(0,Math.floor(-t.y/t.k/s)),y1=Math.min(ny-1,Math.floor((h-t.y)/t.k/s));
-    if((x1-x0+1)*(y1-y0+1)<=150)for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=z+'/'+y+'/'+x;keep.add(k);
-      if(!TL.has(k)){const el=gt.append('image').attr('href',TILE+k+'.jpg').attr('x',x*s).attr('y',y*s).attr('width',s*1.003).attr('height',s*1.003).attr('preserveAspectRatio','none').node();
-        el.addEventListener('error',()=>{el.remove();TL.delete(k)});TL.set(k,el)}}}
+    if((x1-x0+1)*(y1-y0+1)>L.cap)continue;
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const k=L.k+'/'+z+'/'+y+'/'+x;keep.add(k);
+      if(!TL.has(k)){const el=g.append('image').attr('href',L.url(z,y,x)).attr('x',x*s).attr('y',y*s).attr('width',s*1.003).attr('height',s*1.003).attr('preserveAspectRatio','none').node();
+        el.addEventListener('error',()=>{el.remove()});TL.set(k,el)}}}
   const old=[...TL.keys()].filter(k=>!keep.has(k));
   setTimeout(()=>old.forEach(k=>{if(!keep.has(k)||!satOn){const e=TL.get(k);if(e){e.remove();TL.delete(k)}}}),keep.size?900:0)}
 function scaleMarks(){MS=Math.max(.5,Math.min(1.25,.45+K*.11))/K;
   for(const p of PTS)p.el.setAttribute('transform','translate('+p.x+','+p.y+') scale('+MS*p.sf+')');
   for(const c of CL)c.el.setAttribute('transform','translate('+c.x+','+c.y+') scale('+1/K+')');
+  for(const v of LIVE)v.el.setAttribute('transform','translate('+v.x+','+v.y+') rotate('+((v.course==null?90:+v.course)-90)+') scale('+MS*1.15+')');
   svg.classed('lab',K>=4.5).classed('far',K<1.6);if(still)tickShips(T0)}
 function cluster(){gc.selectAll('*').remove();CL=[];for(const p of PTS)p.cl=false;
   if(K<5&&!tracing){const cell=34/K,m=new Map();
@@ -125,7 +129,8 @@ function apply(){
     p.vis=v||h;p.el.setAttribute('class','mk st-'+s+(s!==p.st?' new':'')+(h?' hl':'')+(sel===p.el?' sel':''))}
   for(const l of LNS){const s=l.es=est(l);const h=HL.has(l);l.vis=(on.cats.has(l.cat)&&on.st.has(s)&&!on.chk)||h;
     for(const e of l.segs)e.setAttribute('class','ln '+l.cat+' st-'+s+(s!==l.st?' new':'')+(h?' hl':''));for(const e of l.els)e.style.display=l.vis?'':'none'}
-  for(const s of SHIPS)s.el.style.display=(on.cats.has('ships')&&s.l.vis&&!tracing)?'':'none';
+  for(const s of SHIPS)s.el.style.display=(on.cats.has('ships')&&s.l.vis&&!tracing&&!LIVE.length)?'':'none';
+  for(const v of LIVE)v.el.style.display=(on.cats.has('ships')&&!tracing)?'':'none';
   document.getElementById('gemg').style.display=on.cats.has('netg')?'':'none';document.getElementById('geml').style.display=on.cats.has('neto')?'':'none';
   svg.classed('tracing',tracing).classed('hlab',tracing&&HL.size<=10);
   document.querySelectorAll('#groups input').forEach(i=>i.checked=on.cats.has(i.value));
@@ -174,11 +179,11 @@ function showPoint(p,fly){sel=p.el;CEL.forEach(c=>c.el.classList.remove('csel'))
   const capL=p.cat==='fsru'?'Unit':p.cat==='choke'?'Flow':'Capacity';const pw=p.cat==='pwr';const inprog=p.st==='c'||p.st==='p';
   openCard(KIND[p.cat],CATS[p.cat].c,'<h2>'+esc(p.name)+'</h2><span class="tag">'+STN[p.st]+'</span>'+(p.country?'<button class="tag lkc" data-c="'+esc(p.country.split(' / ')[0])+'">'+esc(p.country)+'</button>':'')+
    '<dl>'+row(capL,p.cap)+row(pw?'Gas supply':p.cat==='fsru'?'Terminal':'Operator',p.op)+row('Vessel owner',p.own)+row('Charterer',p.chr)+(p.cat==='fsru'&&p.term?row('Charter end',p.end?'About '+p.end+' (verify)':'No fixed end known'):'')+row(pw?'Import need':'Trade role',p.role)+(inprog?row('Start-up',p.yr?'Target '+p.yr+' (verify)':'No firm date'):'')+row('Position',p.lat.toFixed(2)+', '+p.lon.toFixed(2)+' (approximate)')+'</dl>'+
-   ioBlock(p)+(p.term?'<p class="notep">'+esc(p.term)+'</p>':'')+(p.note?'<p class="notep">'+esc(p.note)+'</p>':'')+
+   ioBlock(p)+newsBlock(p)+(p.term?'<p class="notep">'+esc(p.term)+'</p>':'')+(p.note?'<p class="notep">'+esc(p.note)+'</p>':'')+
    '<a class="sl" target="_blank" rel="noopener" href="https://www.google.com/maps/@'+p.lat+','+p.lon+',9000m/data=!3m1!1e3">Open site in satellite imagery</a>'+srcBlock(p));
   setHash(p.id);apply();if(fly)flyTo(p.lon,p.lat,Math.max(K,40))}
 function showLine(l,fly){sel=null;CEL.forEach(c=>c.el.classList.remove('csel'));trace(l);const sea=CATS[l.cat].line===2;
-  openCard(KIND[l.cat],CATS[l.cat].c,'<h2>'+esc(l.name)+'</h2><span class="tag">'+(sea?'Active trade lane':STN[l.st])+'</span><dl>'+row(sea?'Volume':'Capacity',l.cap)+((l.st==='c'||l.st==='p')?row('Start-up',l.yr?'Target '+l.yr+' (verify)':'No firm date'):'')+'</dl>'+ioBlock(l)+(l.note?'<p class="notep">'+esc(l.note)+'</p>':'')+
+  openCard(KIND[l.cat],CATS[l.cat].c,'<h2>'+esc(l.name)+'</h2><span class="tag">'+(sea?'Active trade lane':STN[l.st])+'</span><dl>'+row(sea?'Volume':'Capacity',l.cap)+((l.st==='c'||l.st==='p')?row('Start-up',l.yr?'Target '+l.yr+' (verify)':'No firm date'):'')+'</dl>'+ioBlock(l)+newsBlock(l)+(l.note?'<p class="notep">'+esc(l.note)+'</p>':'')+
    '<p class="fine">Drawn schematically. For the surveyed route, switch on the full pipeline network layer.</p>'+srcBlock(l));
   setHash(l.id);apply();if(fly){const a=l.paths.flat();fit([d3.min(a,d=>d[0])-3,d3.min(a,d=>d[1])-3,d3.max(a,d=>d[0])+3,d3.max(a,d=>d[1])+3])}}
 function showShip(s){const v=VT[s.l.cat];sel=null;HL=new Set();tracing=false;openCard(v[0]+' (simulated)',CATS[s.l.cat].c,'<h2>'+v[0]+' on '+esc(s.l.name)+'</h2><span class="tag">Illustrative, not a tracked vessel</span><dl>'+row('Lane volume',s.l.cap)+'</dl><p class="notep">'+v[1]+' '+esc(s.l.note)+'</p><p class="fine">Live ship positions need a paid tracking feed.</p>');apply()}
@@ -213,11 +218,46 @@ res.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.dis
 // ---- toggles
 function togF(v){const f=document.getElementById('filters');const show=v==null?f.classList.contains('hidden'):v;if(show&&A.open)togA(false);f.classList.toggle('hidden',!show);document.getElementById('bFilters').setAttribute('aria-pressed',show)}
 document.getElementById('bFilters').onclick=()=>{const willShow=document.getElementById('filters').classList.contains('hidden');if(willShow&&innerWidth<=860)closeCard();togF()};document.getElementById('fx').onclick=()=>togF(false);
-document.getElementById('bSat').onclick=function(){satOn=!satOn;const im=document.getElementById('sat');if(satOn&&!im.getAttribute('href'))im.setAttribute('href',SAT);im.style.display=satOn?'':'none';svg.classed('sat',satOn);this.setAttribute('aria-pressed',satOn);tiles()};
+document.getElementById('bSat').onclick=function(){satOn=!satOn;const im=document.getElementById('sat');if(satOn&&!im.getAttribute('href'))im.setAttribute('href',SAT);im.style.display=satOn?'':'none';svg.classed('sat',satOn);this.setAttribute('aria-pressed',satOn);document.getElementById('satctl').classList.toggle('hidden',!satOn);tiles()};
+document.getElementById('satctl').addEventListener('click',e=>{const b=e.target.closest('[data-sat]');if(!b)return;SATM.mode=b.dataset.sat;document.querySelectorAll('#satctl [data-sat]').forEach(x=>x.setAttribute('aria-pressed',x===b));document.getElementById('satdate').classList.toggle('hidden',SATM.mode!=='daily');
+  document.getElementById('sathelp').textContent={sharp:'Cloud-free composite from 2016. Sharpest view, about 10 metres. Not current.',week:'Newest Landsat and Sentinel-2 passes from the past 8 days, about 30 metres. Zoom in to a site to load them. Cloud and gaps are normal.',daily:'One wide-area image per day, about 250 metres. Good for weather, smoke and large changes, not site detail.'}[SATM.mode];tiles()});
+document.getElementById('satdate').addEventListener('change',e=>{SATM.date=e.target.value||null;tiles()});
+{const sd=document.getElementById('satdate');sd.max=daysAgo(1);sd.min='2020-01-01';sd.value=daysAgo(1)}
 document.getElementById('zi').onclick=()=>svg.transition().duration(250).call(zoom.scaleBy,1.8);
 document.getElementById('zo').onclick=()=>svg.transition().duration(250).call(zoom.scaleBy,1/1.8);
 addEventListener('keydown',e=>{if(e.key==='Escape'){closeCard();res.style.display='none'}});
 addEventListener('resize',setExtent);
+// ---- news, review queue, live vessels
+const NEWSBY=new Map();NEWS.forEach(n=>{const a=NEWSBY.get(n.record)||[];a.push(n);NEWSBY.set(n.record,a)});
+const dfmt=d=>d?new Date(d+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}):'Undated';
+const safeUrl=u=>/^https?:\/\//.test(u||'')?u:'#';
+function newsItem(n,withRecord){return'<li><div><a class="nl" target="_blank" rel="noopener" href="'+esc(safeUrl(n.url))+'">'+esc(n.headline)+'</a><span class="meta">'+(withRecord&&IDX.get(n.record)?'<button class="lk sm" data-n="'+esc(n.record)+'">'+esc(n.record)+'</button>. ':'')+esc(n.source||'')+', '+dfmt(n.published_on)+'</span>'+(n.summary?'<span class="meta">'+esc(n.summary)+'</span>':'')+'</div></li>'}
+function newsBlock(o){const a=(NEWSBY.get(o.name)||[]).slice().sort((x,y)=>(y.published_on||'').localeCompare(x.published_on||''));
+  return a.length?'<div class="notep"><div class="io"><h4>Latest news</h4><ul class="al">'+a.slice(0,4).map(n=>newsItem(n)).join('')+'</ul></div></div>':''}
+const FIELD={status:'Status',startup_year:'Start-up year',charter_end_year:'Charter end',capacity_text:'Capacity',operator:'Operator',vessel_owner:'Vessel owner',charterer:'Charterer',note:'Note'};
+const fval=(f,v)=>f==='status'?(STN[v]||v):(v==null||v===''?'none':v);
+let LIVE=[],liveAt=null;const glv=d3.select('#live');
+const VCOL={tanker:'--crude',crude:'--crude',lng:'--gas',product:'--prod',rig:'--choke',fsru:'--fsru'};
+const VNAME={tanker:'Tanker',crude:'Crude tanker',lng:'LNG carrier',product:'Product tanker',rig:'Drilling rig',fsru:'Floating terminal',other:'Vessel'};
+function setVessels(rows){glv.selectAll('*').remove();
+  LIVE=(rows||[]).filter(v=>v.lat!=null&&v.lon!=null).map(v=>{const o=Object.assign({},v,{x:X(+v.lon),y:Y(+v.lat)});o.kind=v.kind||(/\bLNG\b|GAS|FSRU/i.test(v.name||'')?'lng':'tanker');
+    o.el=glv.append('path').attr('class','ship lv').attr('d','M-6 0L-2.5-2.8H4L6.5 0 4 2.8H-2.5Z').attr('fill','var('+(VCOL[o.kind]||'--port')+')').on('click',e=>{e.stopPropagation();showVessel(o)}).node();return o});
+  liveAt=LIVE.length?d3.max(LIVE,v=>v.updated_at):null;
+  const lab=document.querySelector('#groups input[value="ships"]');if(lab){lab.parentNode.querySelector('b').textContent=LIVE.length?'Vessels (live positions)':'Vessels (simulated)';lab.parentNode.querySelector('em').textContent=(LIVE.length||SHIPS.length).toLocaleString()}
+  document.getElementById('note').textContent=(LIVE.length?LIVE.length+' live vessel positions, last update '+new Date(liveAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'. Coastal coverage only':'Vessels simulated')+'. Figures approximate. Data: '+(window.DATA_SOURCE||'bundled snapshot')+'.';
+  scaleMarks();apply()}
+function showVessel(v){sel=null;HL=new Set();tracing=false;const mins=Math.round((Date.now()-new Date(v.updated_at))/6e4);
+  openCard(VNAME[v.kind]||'Vessel',VCOL[v.kind]||'--port','<h2>'+esc(v.name||('Vessel '+v.mmsi))+'</h2><span class="tag">Live position</span><dl>'+row('Type',VNAME[v.kind]||v.ship_type)+row('Speed',v.speed!=null?(+v.speed).toFixed(1)+' knots':'')+row('Heading',v.course!=null?Math.round(v.course)+' degrees':'')+row('Destination',v.destination)+row('Last seen',mins<90?mins+' minutes ago':Math.round(mins/60)+' hours ago')+row('Position',(+v.lat).toFixed(3)+', '+(+v.lon).toFixed(3))+row('Identifier',v.mmsi)+'</dl><p class="fine">Position broadcast by the vessel and received by shore stations. Destination is typed in by the crew and is often out of date.</p>');apply()}
+if(window.TRACKER_REFRESH_VESSELS)setInterval(()=>{if(document.hidden)return;window.TRACKER_REFRESH_VESSELS().then(r=>{if(r)setVessels(r)}).catch(()=>{})},60000);
+// ---- satellite modes
+const SATM={mode:'sharp',date:null};
+function daysAgo(n){return new Date(Date.now()-n*864e5).toISOString().slice(0,10)}
+function satLayers(){const sharp={k:'sharp',base:1024,px:256,max:13,min:4,cap:150,url:(z,y,x)=>TILE+z+'/'+y+'/'+x+'.jpg'};
+  const G='https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/';
+  if(SATM.mode==='daily'){const d=SATM.date||daysAgo(1);return[{k:'daily'+d,base:1638.4,px:512,max:8,min:1,cap:60,url:(z,y,x)=>G+'VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/'+d+'/250m/'+z+'/'+y+'/'+x+'.jpg'}]}
+  if(SATM.mode==='week'){const out=[sharp];for(let i=9;i>=2;i--){const d=daysAgo(i);for(const L of['HLS_L30_Nadir_BRDF_Adjusted_Reflectance','HLS_S30_Nadir_BRDF_Adjusted_Reflectance'])
+    out.push({k:L.slice(4,7)+d,base:1638.4,px:512,max:11,min:7,cap:12,url:(z,y,x)=>G+L+'/default/'+d+'/31.25m/'+z+'/'+y+'/'+x+'.png'})}return out}
+  return[sharp]}
 // ---- analysis panel: totals in view, asset list, project pipeline, companies, charters
 const A={open:false,tab:'view',scope:'view',type:'all',sort:'cap',co:null};
 const NUM=p=>p.cat==='ref'?(p.kbd||0):p.cat==='lngx'?(parseFloat(p.cap)||0):0;
@@ -280,6 +320,14 @@ function renderAn(){if(!A.open)return;const list=scoped();const body=document.ge
     if(selc){h+='<div class="ctl"><h3 style="margin:0">'+esc(selc.n)+'</h3><button class="chip" id="acoback">All companies</button></div><p class="fine" style="margin:0 0 6px">'+selc.a.length+' sites'+(selc.ref?'. Refining '+nf(selc.ref)+' thousand barrels/day':'')+(selc.lng?'. LNG export '+nf(selc.lng,1)+' million tonnes/year':'')+'. Highlighted on the map.</p><ul class="al">'+selc.a.slice().sort((a,b)=>NUM(b)-NUM(a)).map(p=>aRow(p,(p.cap||'').slice(0,34))).join('')+'</ul>'}
     else h+=(cos.length?'<ul class="al co">'+cos.slice(0,60).map(e=>'<li><div><button class="lk" data-co="'+esc(e.n)+'">'+esc(e.n)+'</button><span class="meta">'+e.a.length+' sites'+(e.ref?', refining '+nf(e.ref)+' thousand barrels/day':'')+(e.lng?', LNG export '+nf(e.lng,1)+' million tonnes/year':'')+'</span></div></li>').join('')+'</ul>':'<p class="fine">No company has two or more sites in this window. Zoom out or switch to whole world.</p>');
     h+='<p class="fine">Gross capacity of sites a company operates, partners in or owns the vessel for. This is not equity share. Company names are read from the operator field and may split or merge imperfectly.</p>'}
+  else if(A.tab==='news'){
+    const a=NEWS.slice().sort((x,y)=>(y.published_on||'').localeCompare(x.published_on||''));
+    h=a.length?'<ul class="al">'+a.slice(0,80).map(n=>newsItem(n,true)).join('')+'</ul>':'<p class="fine">No news loaded yet. The daily scan adds dated, sourced headlines here and on each record.</p>';
+    h+='<p class="fine">Headlines come from a daily scan of trade press and company announcements. Each links to its source. Coverage is limited to what is publicly reported.</p>'}
+  else if(A.tab==='review'){
+    const a=PROPOSALS.filter(p=>p.status==='pending');
+    h=a.length?'<ul class="al">'+a.map(p=>'<li><div>'+(IDX.get(p.record)?'<button class="lk" data-n="'+esc(p.record)+'">'+esc(p.record)+'</button>':'<b>'+esc(p.record)+'</b>')+'<span class="chg">'+(FIELD[p.field]||esc(p.field))+': <s>'+esc(fval(p.field,p.current_value))+'</s> to <b>'+esc(fval(p.field,p.proposed_value))+'</b></span><span class="meta">'+esc(p.reason||'')+'</span><span class="meta"><a class="nl sm" target="_blank" rel="noopener" href="'+esc(safeUrl(p.source_url))+'">Source</a>, proposed '+dfmt((p.created_at||'').slice(0,10))+'</span></div></li>').join('')+'</ul>':'<p class="fine">Nothing is waiting for review.</p>';
+    h+='<p class="fine">The daily scan never changes a record on its own. It proposes the change here. Approve or reject each one in the database, or tell Claude, and approved changes are applied to the record.</p>'}
   else if(A.tab==='chart'){
     const fs=list.filter(p=>p.cat==='fsru');const g=[['Ending by 2028',p=>p.end&&p.end<=2028],['Ending 2029 to 2032',p=>p.end>2028&&p.end<=2032],['Ending after 2032',p=>p.end>2032],['Owned outright or no fixed end known',p=>!p.end]];
     h=scopeBar()+(fs.length?'':'<p class="fine">No floating terminals in this window. Zoom out or switch to whole world.</p>');
@@ -313,5 +361,6 @@ setExtent();if(innerWidth<=860)togF(false);
 fit(innerWidth<=860?[-10,-8,80,52]:[-170,-58,180,78],0);scaleMarks();apply();
 if(still)tickShips(T0);else requestAnimationFrame(loop);
 {const id=decodeURIComponent(location.hash.slice(1));const o=id&&[...PTS,...LNS].find(x=>x.id===id);if(o)setTimeout(()=>o.isP?showPoint(o,true):showLine(o,true),300)}
-document.getElementById('note').textContent='Vessels simulated. Figures approximate. Data: '+(window.DATA_SOURCE||'bundled snapshot')+'.';
+setVessels(window.VESSELS||[]);
+void 'Vessels simulated. Figures approximate. Data: '+(window.DATA_SOURCE||'bundled snapshot')+'.';
 

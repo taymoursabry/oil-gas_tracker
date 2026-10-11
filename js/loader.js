@@ -25,7 +25,15 @@
       table('country_balances', 'country'), table('category_defaults', 'category')
     ]);
     if (!assets.length) throw new Error('database returned no assets');
-    return { assets, routes, links, country_balances, category_defaults };
+    // Optional tables: the site still works if they do not exist yet.
+    const opt = (name, query) => getJson(base + name + '?select=*&' + query, { headers }).catch(() => []);
+    const since = () => new Date(Date.now() - 864e5).toISOString();
+    const [news, proposals, vessels] = await Promise.all([
+      opt('news', 'order=published_on.desc.nullslast&limit=500'), opt('change_proposals', 'status=eq.pending&order=created_at.desc'),
+      opt('vessels', 'updated_at=gte.' + since() + '&limit=5000')
+    ]);
+    window.TRACKER_REFRESH_VESSELS = () => opt('vessels', 'updated_at=gte.' + since() + '&limit=5000');
+    return { assets, routes, links, country_balances, category_defaults, news, proposals, vessels };
   }
 
   const monthYear = d => d ? new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : null;
@@ -67,6 +75,9 @@
     data.category_defaults.forEach(c => { window.TYP[c.category] = [c.typical_supplied_by || '', c.typical_delivers_to || '']; });
     window.WORLD = world;
     window.GEM = pipelines;
+    window.NEWS = data.news || [];
+    window.PROPOSALS = data.proposals || [];
+    window.VESSELS = data.vessels || [];
     window.SAT = 'img/satellite.jpg';
 
     const s = document.createElement('script');
