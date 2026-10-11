@@ -90,7 +90,7 @@ function tiles(){
   if(gt.attr('data-sig')!==sig){gt.selectAll('*').remove();TL.clear();gt.attr('data-sig',sig);layers.forEach(l=>gt.append('g').attr('data-k',l.k))}
   const t=d3.zoomTransform(svg.node()),[w,h]=size(),dpr=Math.min(2,window.devicePixelRatio||1);const keep=new Set();
   for(const L of layers){
-    if(L.merc){const z=Math.min(L.max,Math.round(Math.log2(W*t.k*dpr/256)));if(z<L.min)continue;const n=2**z,g=gt.select('g[data-k="'+L.k+'"]');
+    if(L.merc){const z=Math.min(L.max,Math.round(Math.log2(W*t.k*Math.min(dpr,1.5)/256)));if(z<L.min)continue;const n=2**z,g=gt.select('g[data-k="'+L.k+'"]');
       const lonA=(-t.x/t.k)/W*360-180,lonB=((w-t.x)/t.k)/W*360-180,latA=90-(-t.y/t.k)/H*180,latB=90-((h-t.y)/t.k)/H*180;
       const my=la=>{const r=Math.max(-85,Math.min(85,la))*Math.PI/180;return(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n},ml=y=>Math.atan(Math.sinh(Math.PI*(1-2*y/n)))*180/Math.PI;
       const x0=Math.max(0,Math.floor((lonA+180)/360*n)),x1=Math.min(n-1,Math.floor((lonB+180)/360*n)),y0=Math.max(0,Math.floor(my(latA))),y1=Math.min(n-1,Math.floor(my(latB)));
@@ -287,13 +287,13 @@ if(window.TRACKER_REFRESH_VESSELS)setInterval(()=>{if(document.hidden)return;win
 // ---- satellite modes
 const SATM={mode:'sharp',date:null};
 function daysAgo(n){return new Date(Date.now()-n*864e5).toISOString().slice(0,10)}
-function satLayers(){const sharp={k:'sharp',base:1024,px:256,max:13,min:4,cap:150,url:(z,y,x)=>TILE+z+'/'+y+'/'+x+'.jpg'};
+function satLayers(){const sharp={k:'sharp',base:1024,px:256,max:13,min:4,cap:260,url:(z,y,x)=>TILE+z+'/'+y+'/'+x+'.jpg'};
   const G='https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/';
   if(SATM.mode==='daily'){const d=SATM.date||daysAgo(1);return[{k:'daily'+d,base:1638.4,px:512,max:8,min:1,cap:60,url:(z,y,x)=>G+'VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/'+d+'/250m/'+z+'/'+y+'/'+x+'.jpg'}]}
   if(SATM.mode==='week'){const out=[sharp];for(let i=9;i>=2;i--){const d=daysAgo(i);for(const L of['HLS_L30_Nadir_BRDF_Adjusted_Reflectance','HLS_S30_Nadir_BRDF_Adjusted_Reflectance'])
     out.push({k:L.slice(4,7)+d,base:1638.4,px:512,max:11,min:7,cap:12,url:(z,y,x)=>G+L+'/default/'+d+'/31.25m/'+z+'/'+y+'/'+x+'.png'})}return out}
   // Detail: cloud-free composite when zoomed out, sub-metre aerial and satellite imagery when zoomed in.
-  return[sharp,{k:'detail',merc:true,min:10,max:18,cap:80,url:(z,y,x)=>ESRI+z+'/'+y+'/'+x}]}
+  return[sharp,{k:'detail',merc:true,min:10,max:18,cap:260,url:(z,y,x)=>ESRI+z+'/'+y+'/'+x}]}
 // ---- analysis panel: totals in view, asset list, project pipeline, companies, charters
 const A={open:false,tab:'view',scope:'view',type:'all',sort:'cap',co:null};
 const NUM=p=>p.cat==='ref'?(p.kbd||0):p.cat==='lngx'?(parseFloat(p.cap)||0):0;
