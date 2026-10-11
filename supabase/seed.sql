@@ -391,7 +391,9 @@ insert into public.og_assets (id, category, name, country, lat, lon, status, cap
 ('kinyerezi-dar-es-salaam', 'pwr', 'Kinyerezi, Dar es Salaam', 'Tanzania', -6.85, 39.2, 'o', 'About 600 megawatts', null, 'Domestic Songo Songo and Mnazi Bay gas', 'Low', null, null, null, null, null, null, null, null, 378),
 ('mombasa-lng-to-power', 'pwr', 'Mombasa LNG-to-power', 'Kenya', -4.05, 39.62, 'p', 'Proposed', null, 'Imported LNG', 'Low, speculative', 'Floated repeatedly. Geothermal keeps crowding it out.', null, null, null, null, null, null, null, 379),
 ('algerian-domestic-demand', 'pwr', 'Algerian domestic demand', 'Algeria', 36.7, 3.1, 'o', 'About 50 billion cubic metres/year', null, 'Domestic gas', 'None, but erodes exports', 'Domestic use now rivals export volume. The main long-term threat to Algerian supply to Europe.', null, null, null, null, null, null, null, 380),
-('libyan-grid', 'pwr', 'Libyan grid', 'Libya', 32.8, 13, 'o', 'About 10 gigawatts nominal', null, 'Domestic gas and diesel', 'None, but erodes exports', 'Summer shortages cut Greenstream exports to Italy.', null, null, null, null, null, null, null, 381)
+('libyan-grid', 'pwr', 'Libyan grid', 'Libya', 32.8, 13, 'o', 'About 10 gigawatts nominal', null, 'Domestic gas and diesel', 'None, but erodes exports', 'Summer shortages cut Greenstream exports to Italy.', null, null, null, null, null, null, null, 381),
+('sonker-liquid-bulk-terminal-ain-sokhna', 'port', 'Sonker liquid bulk terminal, Ain Sokhna', 'Egypt', 29.66, 32.37, 'o', '100,000 cubic metres gasoil and 150,000 cubic metres LPG storage, plus FSRU berths', null, 'Sonker Bunkering Company (Egyptian Amiral Petroleum Services 51 percent; Misr Petroleum 15; Suez Canal Economic Zone authority 12; Ministry of Finance 12; Petroleum Cooperative 10)', 'LPG, gasoil and LNG import; ammonia export', 'Basin 3 of Sokhna Port, under an agreement with DP World Sokhna. Completed 2020. Hosts the berths where Egypt''s floating LNG terminals dock. 25-year supply point agreement with EGPC. Gasoil pipeline of 37.5 kilometres to the national grid. Original project cost about 417 million dollars; a refinancing of up to 355 million dollars was disclosed in 2022 and is still listed as pending.', null, null, null, null, null, 'International Finance Corporation project disclosures 36828 and 44905; EBRD', '2026-10-11', 382),
+('ain-sokhna-onshore-lng-terminal', 'lngi', 'Ain Sokhna onshore LNG terminal (tender)', 'Egypt', 29.69, 32.34, 'p', 'About 1 billion cubic feet/day initially, with floating storage of up to 290,000 cubic metres', null, 'Egyptian government tender', 'Import', 'Egypt''s first permanent regasification terminal. Three bidders reported in August 2026: BGN of Turkey, UCC Holding of Qatar and a local player. Cost, award date and construction timing not disclosed. Would reduce reliance on leased floating units.', null, null, null, null, null, 'Enterprise, 19 August 2026', '2026-10-11', 383)
 on conflict do nothing;
 
 insert into public.og_routes (id, category, name, status, capacity_text, note, startup_year, paths, sort_order) values
@@ -1040,7 +1042,16 @@ insert into public.og_links (subject, direction, counterparty, position) values
 ('West Java (Jakarta Bay)', 'in', 'Tangguh', 1),
 ('West Java (Jakarta Bay)', 'out', 'Muara Karang and Tanjung Priok power plants', 0),
 ('Batangas', 'in', 'Spot LNG', 0),
-('Batangas', 'out', 'Batangas gas-fired plants (First Gen, San Miguel)', 0)
+('Batangas', 'out', 'Batangas gas-fired plants (First Gen, San Miguel)', 0),
+('Sonker liquid bulk terminal, Ain Sokhna', 'in', 'LPG and gasoil cargoes, mainly from the Gulf', 0),
+('Sonker liquid bulk terminal, Ain Sokhna', 'in', 'Ain Sokhna FSRU cluster', 1),
+('Sonker liquid bulk terminal, Ain Sokhna', 'out', 'EGPC under a 25-year supply point agreement', 0),
+('Sonker liquid bulk terminal, Ain Sokhna', 'out', 'Egyptian national gas grid', 1),
+('Sonker liquid bulk terminal, Ain Sokhna', 'out', 'Ammonia exports', 2),
+('Ain Sokhna onshore LNG terminal (tender)', 'in', 'Spot and tender LNG', 0),
+('Ain Sokhna onshore LNG terminal (tender)', 'out', 'Egyptian national gas grid', 0),
+('Ain Sokhna onshore LNG terminal (tender)', 'out', 'New Capital', 1),
+('Ain Sokhna onshore LNG terminal (tender)', 'out', 'Beni Suef', 2)
 on conflict do nothing;
 
 insert into public.og_country_balances (country, oil_production_mbd, oil_consumption_mbd, gas_production_bcm, gas_consumption_bcm) values

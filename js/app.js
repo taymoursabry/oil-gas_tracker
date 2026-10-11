@@ -200,11 +200,13 @@ document.getElementById('cbody').addEventListener('click',e=>{const b=e.target.c
 document.getElementById('cx').onclick=()=>closeCard();svg.on('click',()=>{closeCard();document.getElementById('res').style.display='none'});
 // ---- search
 const q=document.getElementById('q'),res=document.getElementById('res');
-q.addEventListener('input',()=>{const s=q.value.trim().toLowerCase();if(s.length<2){res.style.display='none';return}
-  const hits=[];for(const n of new Set([...CEL.keys(),...Object.keys(CSTAT)]))if(n.toLowerCase().startsWith(s))hits.push(['c',{name:n},'Country view']);
-  for(const p of PTS)if((p.name+' '+p.country+' '+(p.op||'')+' '+(p.cap||'')+' '+(p.own||'')+' '+(p.chr||'')).toLowerCase().includes(s))hits.push(['p',p,KIND[p.cat]+(p.country?', '+p.country:'')]);
-  for(const l of LNS)if(l.name.toLowerCase().includes(s))hits.push(['l',l,KIND[l.cat]]);
-  res.innerHTML=hits.slice(0,12).map((h,i)=>'<button data-i="'+i+'">'+esc(h[1].name)+'<br><span>'+esc(h[2])+'</span></button>').join('')||'<button disabled>No match. Try a country or operator.</button>';
+const fold=t=>t.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/\b(ein|el ain|al ain)\b/g,'ain').replace(/sukhna|sokhna|sukhnah/g,'sokhna').replace(/[^a-z0-9]+/g,' ').trim();
+q.addEventListener('input',()=>{const s=fold(q.value);if(s.length<2){res.style.display='none';return}const words=s.split(' ');
+  const hits=[];for(const n of new Set([...CEL.keys(),...Object.keys(CSTAT)]))if(fold(n).startsWith(s))hits.push(['c',{name:n},'Country view',0]);
+  for(const p of PTS){const hay=p.hay||(p.hay=fold(p.name+' '+p.country+' '+(p.op||'')+' '+(p.cap||'')+' '+(p.own||'')+' '+(p.chr||'')+' '+(p.note||'')));if(words.every(w=>hay.includes(w)))hits.push(['p',p,KIND[p.cat]+(p.country?', '+p.country:''),fold(p.name).includes(words[0])?0:1])}
+  for(const l of LNS){const hay=l.hay||(l.hay=fold(l.name+' '+(l.note||'')));if(words.every(w=>hay.includes(w)))hits.push(['l',l,KIND[l.cat],fold(l.name).includes(words[0])?0:1])}
+  hits.sort((a,b)=>(a[3]||0)-(b[3]||0));
+  res.innerHTML=hits.slice(0,12).map((h,i)=>'<button data-i="'+i+'">'+esc(h[1].name)+'<br><span>'+esc(h[2])+'</span></button>').join('')||'<button disabled>No match. Try a country, operator or a shorter name. If the asset is missing, ask for it to be added.</button>';
   res.style.display='block';res._h=hits});
 res.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const h=res._h[+b.dataset.i];res.style.display='none';q.blur();
   h[0]==='c'?showCountry(h[1].name,true):h[0]==='p'?showPoint(h[1],true):showLine(h[1],true)});
