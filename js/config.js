@@ -2,7 +2,7 @@
 // The key must be the Supabase publishable (anon) key. It is safe in a public page because the
 // database only grants read access to it. Never put the service role key here.
 window.TRACKER_CONFIG = {
-  supabaseUrl: '',
-  supabaseKey: '',
-  tablePrefix: ''
+  supabaseUrl: 'https://hnomtbmfxtyrmtoeuabr.supabase.co',
+  supabaseKey: 'sb_publishable_GR7_GRTZ0YrOrVjASo3gCQ_ZiHE8BU8',
+  tablePrefix: 'og_'
 };

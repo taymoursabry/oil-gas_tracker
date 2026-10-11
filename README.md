@@ -32,15 +32,16 @@ and sea lanes. Every record carries a card with capacity, operator, who supplies
 
 ## Database
 
-Five tables: `assets` (points), `routes` (named pipelines and sea lanes), `links` (supplied by / delivers to),
-`country_balances` and `category_defaults`. The page reads them with the publishable key. Row level security
+Five tables, all prefixed `og_` because they share a Supabase project: `og_assets` (points), `og_routes`
+(named pipelines and sea lanes), `og_links` (supplied by / delivers to), `og_country_balances` and
+`og_category_defaults`. The page reads them with the publishable key. Row level security
 allows reading only, so nobody can change data from the website. Add or edit records in the Supabase table
 editor and they appear on the next page load.
 
 Adding a record:
 
-1. Add a row to `assets` with a unique `id` and `name`, a `category`, `lat`, `lon` and `status`.
-2. Add rows to `links` with the asset name as `subject`, `direction` `in` (supplied by) or `out` (delivers to),
+1. Add a row to `og_assets` with a unique `id` and `name`, a `category`, `lat`, `lon` and `status`.
+2. Add rows to `og_links` with the asset name as `subject`, `direction` `in` (supplied by) or `out` (delivers to),
    and the counterparty. If the counterparty matches another record name exactly, it becomes a live link.
 3. Fill `source` and `checked_on` once the record has been verified. The card then shows it as checked.
 

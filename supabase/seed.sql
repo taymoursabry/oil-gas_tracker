@@ -1,6 +1,6 @@
 -- Oil and gas value chain tracker: seed data, generated from data/snapshot.json
 
-insert into public.assets (id, category, name, country, lat, lon, status, capacity_text, capacity_kbd, operator, trade_role, note, vessel_owner, charterer, charter_end_year, charter_note, startup_year, source, checked_on, sort_order) values
+insert into public.og_assets (id, category, name, country, lat, lon, status, capacity_text, capacity_kbd, operator, trade_role, note, vessel_owner, charterer, charter_end_year, charter_note, startup_year, source, checked_on, sort_order) values
 ('jamnagar-complex', 'ref', 'Jamnagar complex', 'India', 22.35, 69.87, 'o', '1240 thousand barrels/day', 1240, 'Reliance Industries', 'Export-led', 'Largest refining complex in the world. Two refineries, one export-only. Heavy buyer of discounted crude; major diesel and jet supplier to Europe and Africa.', null, null, null, null, null, null, null, 0),
 ('vadinar', 'ref', 'Vadinar', 'India', 22.3, 69.7, 'o', '400 thousand barrels/day', 400, 'Nayara Energy (Rosneft-backed)', 'Domestic + export', 'Under European Union sanctions since 2025. Runs mostly Russian crude.', null, null, null, null, null, null, null, 1),
 ('kochi', 'ref', 'Kochi', 'India', 9.97, 76.3, 'o', '310 thousand barrels/day', 310, 'Bharat Petroleum', 'Domestic', 'Largest public-sector refinery in India.', null, null, null, null, null, null, null, 2),
@@ -103,7 +103,7 @@ insert into public.assets (id, category, name, country, lat, lon, status, capaci
 ('corpus-christi', 'lngx', 'Corpus Christi', 'United States', 27.88, -97.27, 'o', '25 million tonnes/year', null, 'Cheniere', 'Export', 'Stage 3 midscale trains ramping. Figure includes Stage 3 at completion.', null, null, null, null, null, null, null, 99)
 on conflict do nothing;
 
-insert into public.assets (id, category, name, country, lat, lon, status, capacity_text, capacity_kbd, operator, trade_role, note, vessel_owner, charterer, charter_end_year, charter_note, startup_year, source, checked_on, sort_order) values
+insert into public.og_assets (id, category, name, country, lat, lon, status, capacity_text, capacity_kbd, operator, trade_role, note, vessel_owner, charterer, charter_end_year, charter_note, startup_year, source, checked_on, sort_order) values
 ('cameron', 'lngx', 'Cameron', 'United States', 30.04, -93.33, 'o', '12 million tonnes/year', null, 'Sempra-led', 'Export', null, null, null, null, null, null, null, null, 100),
 ('freeport', 'lngx', 'Freeport', 'United States', 28.94, -95.31, 'o', '15 million tonnes/year', null, 'Freeport LNG', 'Export', null, null, null, null, null, null, null, null, 101),
 ('calcasieu-pass', 'lngx', 'Calcasieu Pass', 'United States', 29.77, -93.34, 'o', '10 million tonnes/year', null, 'Venture Global', 'Export', null, null, null, null, null, null, null, null, 102),
@@ -206,7 +206,7 @@ insert into public.assets (id, category, name, country, lat, lon, status, capaci
 ('porto-de-sergipe', 'fsru', 'Porto de Sergipe', 'Brazil', -10.83, -36.92, 'o', 'Energos Nanook', null, 'Eneva', 'Import', null, 'Energos Infrastructure', 'Eneva', 2045, 'Twenty-five years from 2020.', null, null, null, 199)
 on conflict do nothing;
 
-insert into public.assets (id, category, name, country, lat, lon, status, capacity_text, capacity_kbd, operator, trade_role, note, vessel_owner, charterer, charter_end_year, charter_note, startup_year, source, checked_on, sort_order) values
+insert into public.og_assets (id, category, name, country, lat, lon, status, capacity_text, capacity_kbd, operator, trade_role, note, vessel_owner, charterer, charter_end_year, charter_note, startup_year, source, checked_on, sort_order) values
 ('escobar', 'fsru', 'Escobar', 'Argentina', -34.3, -58.75, 'o', 'Expedient (seasonal)', null, 'Enarsa', 'Import', 'Winter-only. Imports falling as Vaca Muerta grows.', 'Excelerate Energy', 'Enarsa', 2026, 'Seasonal, renewed yearly. Need is shrinking.', null, null, null, 200),
 ('cartagena-spec', 'fsru', 'Cartagena (SPEC)', 'Colombia', 10.3, -75.55, 'o', 'Hoegh Grace', null, 'SPEC LNG', 'Import', 'Imports rising as domestic gas declines.', 'Hoegh Evi', 'SPEC LNG', 2036, 'Twenty years from 2016 with early-exit options. Second unit being sought as imports rise.', null, null, null, 201),
 ('acajutla', 'fsru', 'Acajutla', 'El Salvador', 13.57, -89.83, 'o', 'BW Tatiana', null, 'Energia del Pacifico', 'Import', null, 'BW / Energia del Pacifico', 'Energia del Pacifico', null, 'Tied to the power plant. Long-term.', null, null, null, 202),
@@ -309,7 +309,7 @@ insert into public.assets (id, category, name, country, lat, lon, status, capaci
 ('kozmino', 'port', 'Kozmino', 'Russia', 42.73, 133.05, 'o', 'About 900 thousand barrels/day', null, null, 'Crude export to Asia', 'End of the Eastern Siberia-Pacific Ocean pipeline.', null, null, null, null, null, null, null, 299)
 on conflict do nothing;
 
-insert into public.assets (id, category, name, country, lat, lon, status, capacity_text, capacity_kbd, operator, trade_role, note, vessel_owner, charterer, charter_end_year, charter_note, startup_year, source, checked_on, sort_order) values
+insert into public.og_assets (id, category, name, country, lat, lon, status, capacity_text, capacity_kbd, operator, trade_role, note, vessel_owner, charterer, charter_end_year, charter_note, startup_year, source, checked_on, sort_order) values
 ('murmansk', 'port', 'Murmansk', 'Russia', 68.97, 33.05, 'o', 'Transshipment hub', null, null, 'Arctic crude and LNG transshipment', null, null, null, null, null, null, null, null, 300),
 ('rotterdam', 'port', 'Rotterdam', 'Netherlands', 51.95, 4.05, 'o', 'Largest port in Europe', null, null, 'Crude import, refining, storage, bunkering', 'Pricing centre for north-west European products.', null, null, null, null, null, null, null, 301),
 ('wilhelmshaven-oil-port', 'port', 'Wilhelmshaven oil port', 'Germany', 53.6, 8.14, 'o', 'Deepwater crude port', null, null, 'Crude import', null, null, null, null, null, null, null, null, 302),
@@ -394,7 +394,7 @@ insert into public.assets (id, category, name, country, lat, lon, status, capaci
 ('libyan-grid', 'pwr', 'Libyan grid', 'Libya', 32.8, 13, 'o', 'About 10 gigawatts nominal', null, 'Domestic gas and diesel', 'None, but erodes exports', 'Summer shortages cut Greenstream exports to Italy.', null, null, null, null, null, null, null, 381)
 on conflict do nothing;
 
-insert into public.routes (id, category, name, status, capacity_text, note, startup_year, paths, sort_order) values
+insert into public.og_routes (id, category, name, status, capacity_text, note, startup_year, paths, sort_order) values
 ('druzhba', 'poil', 'Druzhba', 'o', 'About 1.2 million barrels/day design', 'Northern branch to Poland and Germany carries only Kazakh crude now. Southern branch to Hungary and Slovakia still carries Russian crude, hit repeatedly by Ukrainian strikes in 2025.', null, '[[[52.3,54.9],[50.1,53.2],[45,52.7],[38.5,52.6],[32.7,52.85],[29.25,52.05],[23.7,52.1],[19.7,52.55],[14.28,53.06]],[[29.25,52.05],[25.15,50.08],[22.3,48.62],[18.9,47.3]],[[22.3,48.62],[19.5,48.3],[17.1,48.15]]]'::jsonb, 0),
 ('eastern-siberia-pacific-ocean', 'poil', 'Eastern Siberia-Pacific Ocean', 'o', 'About 1.6 million barrels/day', 'Main Russian route to Asia. Spur to Daqing supplies China directly.', null, '[[[98,55.93],[105.8,56.8],[114,59.5],[125.4,58.6],[123.9,54],[130,50.5],[135.1,48.5],[133.05,42.73]],[[123.9,54],[122.5,52.97],[125,46.6]]]'::jsonb, 1),
 ('baku-tbilisi-ceyhan', 'poil', 'Baku-Tbilisi-Ceyhan', 'o', '1.2 million barrels/day design, runs about half', 'Carries Azeri crude, plus some Kazakh and Turkmen volumes.', null, '[[[49.47,40.18],[46.5,40.9],[44.9,41.6],[43,41.2],[41.3,39.9],[38.5,38.7],[35.93,36.88]]]'::jsonb, 2),
@@ -437,7 +437,7 @@ insert into public.routes (id, category, name, status, capacity_text, note, star
 ('greenstream', 'pgas', 'Greenstream', 'o', 'About 11 billion cubic metres/year design, runs far lower', 'Libya to Sicily.', null, '[[[12.25,32.85],[13.3,35],[14.25,37.07]]]'::jsonb, 39)
 on conflict do nothing;
 
-insert into public.routes (id, category, name, status, capacity_text, note, startup_year, paths, sort_order) values
+insert into public.og_routes (id, category, name, status, capacity_text, note, startup_year, paths, sort_order) values
 ('arab-gas-pipeline', 'pgas', 'Arab Gas Pipeline', 'o', 'About 10 billion cubic metres/year', 'Now carries Israeli gas into Jordan and Egypt, and Azerbaijani-sourced gas toward Syria.', null, '[[[33.8,31.13],[34.4,30.2],[34.9,29.5],[35.7,30.8],[35.93,31.95],[36.3,33.5],[36.72,34.73]]]'::jsonb, 40),
 ('east-mediterranean-gas-ashkelon-arish', 'pgas', 'East Mediterranean Gas (Ashkelon-Arish)', 'o', 'About 7 billion cubic metres/year, being expanded', 'Israeli exports to Egypt. Flows cut during conflict peaks in 2025.', null, '[[[34.55,31.67],[34.15,31.45],[33.8,31.13]]]'::jsonb, 41),
 ('eastmed', 'pgas', 'EastMed', 'p', '10 billion cubic metres/year proposed', 'Israel-Cyprus-Greece. Commercially stalled.', null, '[[[33.6,33.1],[33,34.4],[29,34.6],[25.5,34.8],[22.3,36.6],[20.5,39],[18.5,40.1]]]'::jsonb, 42),
@@ -479,7 +479,7 @@ insert into public.routes (id, category, name, status, capacity_text, note, star
 ('united-states-gulf-to-latin-america-products', 'rprod', 'United States Gulf to Latin America (products)', 'o', 'About 2 million barrels/day', 'Mexico and Brazil are the largest buyers.', null, '[[[-94.5,28.8],[-90,25],[-85.6,21.8],[-80,17],[-66,13.5],[-58,11],[-45,2],[-34.5,-7.5]],[[-94.5,28.8],[-95.5,24],[-96.8,20.5]]]'::jsonb, 78)
 on conflict do nothing;
 
-insert into public.links (subject, direction, counterparty, position) values
+insert into public.og_links (subject, direction, counterparty, position) values
 ('Ghawar', 'out', 'East-West Pipeline (Petroline)', 0),
 ('Ghawar', 'out', 'Ras Tanura and Juaymah', 1),
 ('Ghawar', 'out', 'Ras Tanura', 2),
@@ -682,7 +682,7 @@ insert into public.links (subject, direction, counterparty, position) values
 ('Yamal LNG, Sabetta', 'out', 'Offtakers: TotalEnergies, CNPC, Novatek, Gazprom Marketing', 2)
 on conflict do nothing;
 
-insert into public.links (subject, direction, counterparty, position) values
+insert into public.og_links (subject, direction, counterparty, position) values
 ('Yamal to Europe (LNG)', 'out', 'Zeebrugge', 0),
 ('Yamal to Europe (LNG)', 'out', 'Montoir', 1),
 ('Yamal to Europe (LNG)', 'out', 'Dunkirk', 2),
@@ -885,7 +885,7 @@ insert into public.links (subject, direction, counterparty, position) values
 ('Haynesville', 'out', 'Calcasieu Pass', 2)
 on conflict do nothing;
 
-insert into public.links (subject, direction, counterparty, position) values
+insert into public.og_links (subject, direction, counterparty, position) values
 ('Haynesville', 'out', 'Plaquemines', 3),
 ('Haynesville', 'out', 'Transco', 4),
 ('Sabine Pass', 'out', 'United States Gulf to Europe (LNG)', 0),
@@ -1043,7 +1043,7 @@ insert into public.links (subject, direction, counterparty, position) values
 ('Batangas', 'out', 'Batangas gas-fired plants (First Gen, San Miguel)', 0)
 on conflict do nothing;
 
-insert into public.country_balances (country, oil_production_mbd, oil_consumption_mbd, gas_production_bcm, gas_consumption_bcm) values
+insert into public.og_country_balances (country, oil_production_mbd, oil_consumption_mbd, gas_production_bcm, gas_consumption_bcm) values
 ('United States', 20, 19, 1030, 900),
 ('Saudi Arabia', 10.5, 3.7, 120, 120),
 ('Russia', 10.5, 3.6, 630, 480),
@@ -1097,7 +1097,7 @@ insert into public.country_balances (country, oil_production_mbd, oil_consumptio
 ('Poland', 0.02, 0.7, 4, 20)
 on conflict do nothing;
 
-insert into public.category_defaults (category, typical_supplied_by, typical_delivers_to) values
+insert into public.og_category_defaults (category, typical_supplied_by, typical_delivers_to) values
 ('ref', 'Crude by sea or pipeline (typical)', 'Domestic fuel distributors and export traders (typical)'),
 ('lngx', 'Upstream gas fields nearby (typical)', 'Term buyers and portfolio traders (typical)'),
 ('lngi', 'Term and spot LNG cargoes (typical)', 'National gas grid and power generators (typical)'),

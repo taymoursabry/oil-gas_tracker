@@ -100,6 +100,7 @@ create trigger ${P}country_balances_touch before update on public.${P}country_ba
 ${['assets', 'routes', 'links', 'country_balances', 'category_defaults'].map(t => `alter table public.${P}${t} enable row level security;
 drop policy if exists "${P}${t} public read" on public.${P}${t};
 create policy "${P}${t} public read" on public.${P}${t} for select to anon, authenticated using (true);
+revoke all on public.${P}${t} from anon, authenticated;
 grant select on public.${P}${t} to anon, authenticated;`).join('\n')}
 `;
 d.assets.forEach((a, i) => a.sort_order = i);
