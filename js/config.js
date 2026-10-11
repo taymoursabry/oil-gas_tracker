@@ -7,5 +7,5 @@ window.TRACKER_CONFIG = {
   tablePrefix: 'og_',
   // Optional. A Google Maps Embed key shows a Google satellite view inside each record card.
   // Restrict the key to this site's address in the Google Cloud console before adding it.
-  googleMapsKey: ''
+  googleMapsKey: 'AIzaSyBzprfOizPCuMqczlVc4j0qWrvalCTwiPM'
 };
