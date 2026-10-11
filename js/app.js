@@ -99,7 +99,7 @@ function tiles(){
         if(!TL.has(k)){const px=X(x/n*360-180),py=Y(ml(y)),pw=W/n,ph=Y(ml(y+1))-py;
           const el=g.append('image').attr('x',px).attr('y',py).attr('width',pw*1.002).attr('height',ph*1.002).attr('preserveAspectRatio','none').node();TL.set(k,el);
           // Fetch first so the grey "no imagery here" placeholder tile (a fixed, tiny file) is skipped and the layer below shows through.
-          fetch(L.url(z,y,x)).then(r=>r.ok?r.blob():null).then(b=>{if(!b||b.size<3200||!el.isConnected){el.remove();return}const u=URL.createObjectURL(b);el.addEventListener('load',()=>URL.revokeObjectURL(u));el.setAttribute('href',u)}).catch(()=>el.remove())}}
+          fetch(L.url(z,y,x)).then(r=>r.ok?r.blob():null).then(b=>{if(!b||b.size===2521||!el.isConnected){el.remove();return}const u=URL.createObjectURL(b);el.addEventListener('load',()=>URL.revokeObjectURL(u));el.setAttribute('href',u)}).catch(()=>el.remove())}}
       continue}
     const z=Math.min(L.max,Math.ceil(Math.log2(L.base*t.k*dpr/L.px)));if(z<L.min)continue;
     const s=L.base/2**z,nx=Math.ceil(W/s),ny=Math.ceil(H/s),g=gt.select('g[data-k="'+L.k+'"]');

@@ -15,7 +15,7 @@ const app = 'window.__startApp=function(){\n' + r('js/app.js') + '\n};';
 html = html
   .replace('<script src="vendor/d3.min.js"></script>', '<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>')
   .replace('<script src="vendor/topojson-client.min.js"></script>', '<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>')
-  .replace('<script src="js/config.js?v=5"></script>', () => '<script>window.TRACKER_CONFIG={};window.__SNAP=' + JSON.stringify(snap).replace(/</g, '\\u003c') + ';\nwindow.__WORLD=' + r('data/world.json') + ';\nwindow.__GEM=' + r('data/pipelines.json') + ';\nwindow.__SAT="' + sat + '";\n' + app.replace(/<\/script/g, '<\\/script') + '</script>')
-  .replace('<script src="js/loader.js?v=5"></script>', () => '<script>' + loader + '</script>');
+  .replace('<script src="js/config.js?v=6"></script>', () => '<script>window.TRACKER_CONFIG={};window.__SNAP=' + JSON.stringify(snap).replace(/</g, '\\u003c') + ';\nwindow.__WORLD=' + r('data/world.json') + ';\nwindow.__GEM=' + r('data/pipelines.json') + ';\nwindow.__SAT="' + sat + '";\n' + app.replace(/<\/script/g, '<\\/script') + '</script>')
+  .replace('<script src="js/loader.js?v=6"></script>', () => '<script>' + loader + '</script>');
 fs.writeFileSync(process.argv[2], html);
 console.log((html.length / 1e6).toFixed(2) + ' MB');

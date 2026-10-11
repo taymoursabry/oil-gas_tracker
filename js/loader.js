@@ -81,7 +81,7 @@
     window.SAT = 'img/satellite.jpg';
 
     const s = document.createElement('script');
-    s.src = 'js/app.js?v=5';
+    s.src = 'js/app.js?v=6';
     s.onerror = () => { note.textContent = 'The map code did not load. Reload the page.'; };
     document.body.appendChild(s);
   } catch (e) {
