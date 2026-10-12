@@ -53,6 +53,9 @@
     const p = await getJson('data/pipelines.json');
     return p.g.map(a => [null, 'g', 'o', [a]]).concat(p.l.map(a => [null, 'l', 'o', [a]]));
   };
+  // Reference assets (terminals, fields, plants): drawn from one compact call, details fetched on click.
+  window.TRACKER_REF = rest ? () => getJson(rest + 'rpc/' + (cfg.tablePrefix || '') + 'gem_points_draw', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, hdr), body: '{}' }) : null;
+  window.TRACKER_REF_ONE = gid => getJson(rest + (cfg.tablePrefix || '') + 'gem_points?select=*&order=status,capacity_num.desc.nullslast&gid=eq.' + gid, { headers: hdr });
   window.TRACKER_NETWORK_ONE = id => getJson(rest + (cfg.tablePrefix || '') + 'network?select=name,segment,fuel,status_text,owner,parent,capacity_text,start_year,countries,length_km,url,pid&id=eq.' + id, { headers: hdr }).then(r => r[0]);
 
   try {
@@ -97,7 +100,7 @@
     window.SAT = 'img/satellite.jpg';
 
     const s = document.createElement('script');
-    s.src = 'js/app.js?v=9';
+    s.src = 'js/app.js?v=10';
     s.onerror = () => { note.textContent = 'The map code did not load. Reload the page.'; };
     document.body.appendChild(s);
   } catch (e) {

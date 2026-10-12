@@ -143,6 +143,8 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 #satctl p{margin:0;font-size:12.5px;color:var(--mute);flex-basis:100%}
 #satdate{height:38px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;padding:0 8px}
 .ship.lv{stroke-width:1}
+.rp{stroke:var(--halo);stroke-width:1;cursor:pointer;pointer-events:auto;opacity:.82}.rp.st-c,.rp.st-p{fill-opacity:.35;stroke:currentColor}.rp.st-x{opacity:.4}.rp.on{stroke:var(--ink);stroke-width:2.4;opacity:1}
+.tracing .rp{opacity:.12}
 .lvg{cursor:pointer;pointer-events:auto}.lvg.on .ship{stroke:var(--ink);stroke-width:2.2}
 .mv #gem,.mv #cb{display:none}
 .mv .hit{pointer-events:none}
@@ -190,7 +192,7 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
   <g id="tiles"></g>
   <g id="ctry"></g><path class="cb" id="cb"/>
   <g id="gem"><path id="gem_lx" class="gem l st-x"/><path id="gem_lp" class="gem l st-p"/><path id="gem_lc" class="gem l st-c"/><path id="gem_lo" class="gem l st-o"/><path id="gem_gx" class="gem g st-x"/><path id="gem_gp" class="gem g st-p"/><path id="gem_gc" class="gem g st-c"/><path id="gem_go" class="gem g st-o"/></g>
-  <path id="nethl" class="ln" style="stroke:var(--ink);stroke-width:3.5;pointer-events:none;opacity:.9"/><g id="lines"></g><g id="ships"></g><g id="marks"></g><g id="live"></g><g id="clus"></g>
+  <path id="nethl" class="ln" style="stroke:var(--ink);stroke-width:3.5;pointer-events:none;opacity:.9"/><g id="lines"></g><g id="ships"></g><g id="refp"></g><g id="marks"></g><g id="live"></g><g id="clus"></g>
 </g></svg>
 
 <div id="top">
@@ -246,7 +248,7 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
 
 <script src="vendor/d3.min.js"></script>
 <script src="vendor/topojson-client.min.js"></script>
-<script src="js/config.js?v=9"></script>
-<script src="js/loader.js?v=9"></script>
+<script src="js/config.js?v=10"></script>
+<script src="js/loader.js?v=10"></script>
 </body>
 </html>

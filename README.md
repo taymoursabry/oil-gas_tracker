@@ -83,3 +83,9 @@ unreachable the site falls back to `data/pipelines.json`, which has geometry onl
 
 To refresh: set a one-time token in `supabase/functions/net-import/index.ts`, deploy it, and call it once per
 six-megabyte window of each source file (see the comment at the top of the function). Redeploy a stub after.
+
+## Reference layers
+
+Three optional layers (off by default) come from Global Energy Monitor map files, credit Global Energy Monitor,
+CC BY 4.0: all LNG terminals, all oil and gas fields, all gas-fired power plants. About 13,000 sites in
+`og_gem_points`. Only sites in view are drawn, largest first. They may repeat sites in the curated layers.
