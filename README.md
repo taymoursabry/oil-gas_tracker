@@ -72,3 +72,14 @@ it with GitHub Pages from the `main` branch root.
 - Named pipelines and sea lanes are drawn schematically. The full pipeline network layer uses surveyed routes.
 - Pipeline routes come from Global Energy Monitor's oil and gas infrastructure trackers. Confirm their
   licence terms before redistributing this data commercially.
+
+## Pipeline network
+
+The dense pipeline layers load from the `og_network` table: about 4,600 routes with name, owner, capacity,
+status, start year and length, taken from Global Energy Monitor's Global Oil Infrastructure Tracker and
+Global Gas Infrastructure Tracker map files (licensed CC BY 4.0; credit Global Energy Monitor). Routes are
+simplified to about one kilometre. Cancelled, shelved and retired lines are left out. If the database is
+unreachable the site falls back to `data/pipelines.json`, which has geometry only.
+
+To refresh: set a one-time token in `supabase/functions/net-import/index.ts`, deploy it, and call it once per
+six-megabyte window of each source file (see the comment at the top of the function). Redeploy a stub after.

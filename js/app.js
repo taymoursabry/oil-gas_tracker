@@ -1,4 +1,4 @@
-// Map logic. Expects globals set by loader.js: PTS, LNS, LINKS, TYP, CSTAT, WORLD, GEM, SAT.
+// Map logic. Expects globals set by loader.js: PTS, LNS, LINKS, TYP, CSTAT, WORLD, SAT, and TRACKER_NETWORK() for the pipeline network.
 const W=2048,H=1024,X=l=>(l+180)/360*W,Y=l=>(90-l)/180*H;
 const CATS={
  oil:{label:'Offshore oil fields',grp:'up',c:'--crude',g:'ring'},
@@ -49,8 +49,7 @@ topojson.feature(WORLD,WORLD.objects.countries).features.forEach(f=>{const n=ALI
 let FOCUS=null; // {name, set} while a country is in focus
 d3.select('#cb').attr('d',gp(topojson.mesh(WORLD,WORLD.objects.countries,(a,b)=>a!==b)));
 // ---- full pipeline network (Global Energy Monitor route geometry)
-function gemPath(arr){let d='';for(const a of arr){let x=a[0],y=a[1];d+='M'+X(x/100).toFixed(2)+','+Y(y/100).toFixed(2);for(let i=2;i<a.length;i+=2){x+=a[i];y+=a[i+1];d+='L'+X(x/100).toFixed(2)+','+Y(y/100).toFixed(2)}}return d}
-document.getElementById('gemg').setAttribute('d',gemPath(GEM.g));document.getElementById('geml').setAttribute('d',gemPath(GEM.l));
+const NETN={g:0,l:0};
 // ---- lines
 const lg=d3.line().x(d=>X(d[0])).y(d=>Y(d[1])).curve(d3.curveCatmullRom.alpha(.5));
 const gl=d3.select('#lines');
@@ -78,16 +77,34 @@ function tickShips(now){const t=(now-T0)/1000;for(const s of SHIPS){if(s.el.styl
 const still=matchMedia('(prefers-reduced-motion:reduce)').matches;let last=0;
 function loop(n){if(n-last>70){last=n;tickShips(n)}requestAnimationFrame(loop)}
 // ---- click on the dense pipeline network: nearest route to the pointer
-const NET=[];[['g',GEM.g],['l',GEM.l]].forEach(([k,arr])=>arr.forEach(a=>{let lo=a[0],la=a[1];const ll=[[lo/100,la/100]];for(let i=2;i<a.length;i+=2){lo+=a[i];la+=a[i+1];ll.push([lo/100,la/100])}
-  const pts=ll.map(q=>[X(q[0]),Y(q[1])]);NET.push({k,ll,pts,x0:d3.min(pts,q=>q[0]),x1:d3.max(pts,q=>q[0]),y0:d3.min(pts,q=>q[1]),y1:d3.max(pts,q=>q[1])})}));
-function netHit(mx,my,tol){let best=null,bd=tol*tol;for(const n of NET){if(!on.cats.has(n.k==='g'?'netg':'neto'))continue;if(mx<n.x0-tol||mx>n.x1+tol||my<n.y0-tol||my>n.y1+tol)continue;
+let NET=[];
+function setNetwork(rows){NET=[];NETN.g=NETN.l=0;const D={};
+  for(const r of rows){const k=r[1],st=r[2];NETN[k]++;for(const a of r[3]){let lo=a[0],la=a[1];const ll=[[lo/100,la/100]];for(let i=2;i<a.length;i+=2){lo+=a[i];la+=a[i+1];ll.push([lo/100,la/100])}
+    const pts=ll.map(q=>[X(q[0]),Y(q[1])]);let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9,d='M';for(let i=0;i<pts.length;i++){const q=pts[i];if(q[0]<x0)x0=q[0];if(q[0]>x1)x1=q[0];if(q[1]<y0)y0=q[1];if(q[1]>y1)y1=q[1];d+=(i?'L':'')+q[0].toFixed(2)+','+q[1].toFixed(2)}
+    (D[k+st]=D[k+st]||[]).push(d);NET.push({id:r[0],k,st,ll,pts,x0,x1,y0,y1})}}
+  for(const k of['l','g'])for(const st of['o','c','p','x']){const el=document.getElementById('gem_'+k+st);if(el)el.setAttribute('d',(D[k+st]||[]).join(''))}
+  for(const k of['g','l']){const i=document.querySelector('#groups input[value="net'+(k==='g'?'g':'o')+'"]');if(i){const em=i.parentNode.querySelector('em');if(em)em.textContent=NETN[k].toLocaleString()}}}
+if(window.TRACKER_NETWORK)window.TRACKER_NETWORK().then(r=>{setNetwork(r);apply()}).catch(e=>console.warn(e));
+function netHit(mx,my,tol){let best=null,bd=tol*tol;for(const n of NET){if(!on.cats.has(n.k==='g'?'netg':'neto')||!on.st.has(n.st))continue;if(mx<n.x0-tol||mx>n.x1+tol||my<n.y0-tol||my>n.y1+tol)continue;
   for(let i=1;i<n.pts.length;i++){const a=n.pts[i-1],b=n.pts[i],dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy;let t=L?((mx-a[0])*dx+(my-a[1])*dy)/L:0;t=Math.max(0,Math.min(1,t));const ex=a[0]+t*dx-mx,ey=a[1]+t*dy-my,d=ex*ex+ey*ey;if(d<bd){bd=d;best=n}}}return best}
 function countryAt(q){for(const[n,c]of CEL){const b=c.b;if(q[0]<b[0][0]||q[0]>b[1][0]||q[1]<b[0][1]||q[1]>b[1][1])continue;if(d3.geoContains(c.f,q))return n}return''}
-function showNet(n){sel=null;HL=new Set();tracing=false;const gas=n.k==='g';let km=0;for(let i=1;i<n.ll.length;i++)km+=d3.geoDistance(n.ll[i-1],n.ll[i])*6371;
+function showNetGeom(n){sel=null;HL=new Set();tracing=false;const gas=n.k==='g';let km=0;for(let i=1;i<n.ll.length;i++)km+=d3.geoDistance(n.ll[i-1],n.ll[i])*6371;
   const A=n.ll[0],B=n.ll[n.ll.length-1],ca=countryAt(A),cb=countryAt(B),fmt=q=>q[1].toFixed(2)+', '+q[0].toFixed(2);
   const near=PTS.map(p=>[Math.min(d3.geoDistance(A,[p.lon,p.lat]),d3.geoDistance(B,[p.lon,p.lat]))*6371,p]).filter(r=>r[0]<120).sort((x,y)=>x[0]-y[0]).slice(0,5);
   document.getElementById('nethl').setAttribute('d','M'+n.pts.map(q=>q[0].toFixed(2)+','+q[1].toFixed(2)).join('L'));
   openCard(gas?'Gas pipeline':'Oil or liquids pipeline',gas?'--gas':'--crude','<h2>'+(gas?'Gas':'Oil or liquids')+' pipeline section</h2><span class="tag">Network layer</span><dl>'+row('Route',ca&&cb?(ca===cb?'Within '+ca:ca+' to '+cb):(ca||cb||'Offshore'))+row('Section length','About '+(km<10?km.toFixed(1):Math.round(km).toLocaleString())+' kilometres')+row('Starts at',fmt(A))+row('Ends at',fmt(B))+row('Nearest mapped assets',near.map(r=>r[1].name+' ('+Math.round(r[0])+' kilometres)').join('; '))+'</dl><p class="fine">This layer holds route geometry only. Name, operator, capacity and status are not in the dataset for this section. Major pipelines with full details are in the named pipeline layers. Length is measured along the drawn route and is approximate.</p>');apply()}
+const NST={operating:'Operating',construction:'Under construction',proposed:'Planned',announced:'Planned','pre-construction':'Planned',idle:'Idle',mothballed:'Mothballed'};
+function capText(c){if(!c)return'';const m=/^([\d.]+)\s*(.*)$/.exec(c);if(!m)return'';const v=+m[1],u=m[2].toLowerCase();if(!v)return'';
+  if(u.indexOf('boe')>=0||u.indexOf('bpd')>=0||u.indexOf('barrel')>=0)return'About '+Math.round(v).toLocaleString()+' barrels of oil equivalent a day';
+  if(u.indexOf('billion cubic')>=0||u.indexOf('bcm')>=0)return'About '+(+v.toFixed(1)).toLocaleString()+' billion cubic metres a year';return(+v.toFixed(1)).toLocaleString()+' '+m[2]}
+function showNet(n){if(!n.id||!window.TRACKER_NETWORK_ONE){showNetGeom(n);return}
+  sel=null;HL=new Set();tracing=false;const gas=n.k==='g';
+  const same=NET.filter(q=>q.id===n.id);document.getElementById('nethl').setAttribute('d',same.map(q=>'M'+q.pts.map(p=>p[0].toFixed(2)+','+p[1].toFixed(2)).join('L')).join(''));
+  const kind=gas?'Gas pipeline':'Oil or liquids pipeline',col=gas?'--gas':'--crude';
+  openCard(kind,col,'<h2>Loading pipeline details</h2>');apply();
+  window.TRACKER_NETWORK_ONE(n.id).then(d=>{if(!d){showNetGeom(n);return}
+    const clean=v=>v&&!/^(unknown|null|--|n\/a)\s*$/i.test(v)?v:'';const u=d.url&&/^https:\/\/www\.gem\.wiki\//.test(d.url)?d.url:'';
+    openCard(kind,col,'<h2>'+esc(d.name||'Pipeline')+'</h2><span class="tag">'+esc(NST[d.status_text]||d.status_text||'')+'</span><dl>'+row('Section',/system\/network info/i.test(d.segment||'')?'Whole system':clean(d.segment))+row('Carries',clean(d.fuel))+row('Countries',clean((d.countries||'').replace(/;\s*$/,'').replace(/;\s*/g,', ')))+row('Capacity',capText(d.capacity_text))+row('Length',d.length_km?'About '+Math.round(d.length_km).toLocaleString()+' kilometres':'')+row('Start-up',clean(d.start_year))+row('Owner',clean(d.owner))+row('Parent companies',clean(d.parent))+'</dl>'+(u?'<p><a href="'+esc(u)+'" target="_blank" rel="noopener">Open the Global Energy Monitor page</a> for history and sources.</p>':'')+'<p class="fine">Source: Global Energy Monitor oil and gas infrastructure trackers, licensed CC BY 4.0. Capacity and ownership are as reported there and need verification before use. Route is simplified.</p>')}).catch(()=>showNetGeom(n))}
 svg.node().addEventListener('click',e=>{const t=e.target;if(t.closest&&t.closest('#marks,#live,#ships,#clus,#lines'))return;const m=d3.pointer(e,root.node()),n=netHit(m[0],m[1],7/K);if(n){e.stopPropagation();showNet(n)}},true);
 // ---- zoom, sizing, clustering
 const gc=d3.select('#clus');let CL=[],zq=0;
@@ -158,7 +175,7 @@ function apply(){
     for(const e of l.segs)e.setAttribute('class','ln '+l.cat+' st-'+s+(s!==l.st?' new':'')+(lit?' hl':'')+(lit&&!tracing?' soft':''));for(const e of l.els)e.style.display=l.vis?'':'none'}
   for(const s of SHIPS)s.el.style.display=(on.cats.has('ships')&&s.l.vis&&!tracing&&!LIVE.length)?'':'none';
   drawLive();
-  document.getElementById('gemg').style.display=on.cats.has('netg')?'':'none';document.getElementById('geml').style.display=on.cats.has('neto')?'':'none';
+  for(const k of['l','g'])for(const st of['o','c','p','x']){const el=document.getElementById('gem_'+k+st);if(el)el.style.display=(on.cats.has(k==='g'?'netg':'neto')&&on.st.has(st))?'':'none'}
   svg.classed('tracing',tracing||!!FOCUS).classed('focus',!!FOCUS&&!tracing).classed('hlab',tracing?HL.size<=10:(!!FOCUS&&FOCUS.set.size<=40));
   focusUi();
   document.querySelectorAll('#groups input').forEach(i=>i.checked=on.cats.has(i.value));
@@ -175,7 +192,7 @@ const REG={'World':[-170,-58,180,78],'Middle East Gulf':[44,21,62,32],'Egypt and
   const ch=document.getElementById('chain'),gr=document.getElementById('groups');
   GRPS.forEach(([g,n])=>{ch.insertAdjacentHTML('beforeend','<button data-g="'+g+'" aria-pressed="true" title="Show or hide all '+n+'"><i></i>'+n+'</button>');
     let h='<h3>'+n+'</h3>';
-    ALL.filter(k=>CATS[k].grp===g).forEach(k=>{const c=CATS[k];const cnt=k==='ships'?SHIPS.length:k==='netg'?GEM.g.length:k==='neto'?GEM.l.length:c.line?LNS.filter(l=>l.cat===k).length:PTS.filter(p=>p.cat===k).length;
+    ALL.filter(k=>CATS[k].grp===g).forEach(k=>{const c=CATS[k];const cnt=k==='ships'?SHIPS.length:k==='netg'?NETN.g:k==='neto'?NETN.l:c.line?LNS.filter(l=>l.cat===k).length:PTS.filter(p=>p.cat===k).length;
       h+='<label class="row"><input type="checkbox" value="'+k+'">'+legend(k)+'<b>'+c.label+'</b><em>'+cnt.toLocaleString()+'</em></label>'});
     gr.insertAdjacentHTML('beforeend',h)});
   ch.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const ks=ALL.filter(k=>CATS[k].grp===b.dataset.g);const all=ks.every(k=>on.cats.has(k));ks.forEach(k=>all?on.cats.delete(k):on.cats.add(k));apply()});

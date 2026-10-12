@@ -55,6 +55,7 @@ svg#map:active{cursor:grabbing}
 .gem{fill:none;vector-effect:non-scaling-stroke;stroke-width:.8;opacity:.6;pointer-events:none;stroke-linejoin:round}
 .gem.g{stroke:var(--gas)}.gem.l{stroke:var(--crude)}
 .far .gem{stroke-width:.5;opacity:.45}
+.gem.st-c{stroke-dasharray:5 3}.gem.st-p{stroke-dasharray:2 3;opacity:.5}.gem.st-x{opacity:.28}
 .tracing .mk:not(.hl){opacity:.13}.tracing .ln:not(.hl){opacity:.08}.tracing .gem{opacity:.1}
 .ln.hl{stroke-width:3.6;opacity:1}.hlab .mk.hl text{display:block}
 .cl{cursor:pointer}.cl circle{fill:var(--panel);stroke:var(--ink);stroke-width:1.5}.cl text{font:700 12px "Barlow Semi Condensed",sans-serif;fill:var(--ink)}
@@ -188,7 +189,7 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
   <image id="sat" x="0" y="0" width="2048" height="1024" preserveAspectRatio="none" style="display:none"/>
   <g id="tiles"></g>
   <g id="ctry"></g><path class="cb" id="cb"/>
-  <g id="gem"><path id="geml" class="gem l"/><path id="gemg" class="gem g"/></g>
+  <g id="gem"><path id="gem_lx" class="gem l st-x"/><path id="gem_lp" class="gem l st-p"/><path id="gem_lc" class="gem l st-c"/><path id="gem_lo" class="gem l st-o"/><path id="gem_gx" class="gem g st-x"/><path id="gem_gp" class="gem g st-p"/><path id="gem_gc" class="gem g st-c"/><path id="gem_go" class="gem g st-o"/></g>
   <path id="nethl" class="ln" style="stroke:var(--ink);stroke-width:3.5;pointer-events:none;opacity:.9"/><g id="lines"></g><g id="ships"></g><g id="marks"></g><g id="live"></g><g id="clus"></g>
 </g></svg>
 
@@ -245,7 +246,7 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
 
 <script src="vendor/d3.min.js"></script>
 <script src="vendor/topojson-client.min.js"></script>
-<script src="js/config.js?v=8"></script>
-<script src="js/loader.js?v=8"></script>
+<script src="js/config.js?v=9"></script>
+<script src="js/loader.js?v=9"></script>
 </body>
 </html>

@@ -38,6 +38,23 @@
 
   const monthYear = d => d ? new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : null;
 
+  // Start the base map download straight away, alongside the database calls.
+  const worldP = getJson('data/world.json');
+  // Pipeline network: full routes with attributes from the database, else the bundled geometry-only file.
+  const rest = cfg.supabaseUrl && cfg.supabaseKey ? cfg.supabaseUrl.replace(/\/$/, '') + '/rest/v1/' : null;
+  const hdr = rest ? { apikey: cfg.supabaseKey, Authorization: 'Bearer ' + cfg.supabaseKey } : null;
+  window.TRACKER_NETWORK = async () => {
+    if (rest) {
+      try {
+        const rows = await getJson(rest + 'rpc/' + (cfg.tablePrefix || '') + 'network_draw', { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, hdr), body: '{}' });
+        if (rows && rows.length > 500) return rows;
+      } catch (e) { console.warn('Pipeline network not available from the database, using the bundled file.', e); }
+    }
+    const p = await getJson('data/pipelines.json');
+    return p.g.map(a => [null, 'g', 'o', [a]]).concat(p.l.map(a => [null, 'l', 'o', [a]]));
+  };
+  window.TRACKER_NETWORK_ONE = id => getJson(rest + (cfg.tablePrefix || '') + 'network?select=name,segment,fuel,status_text,owner,parent,capacity_text,start_year,countries,length_km,url,pid&id=eq.' + id, { headers: hdr }).then(r => r[0]);
+
   try {
     let data = null;
     window.DATA_SOURCE = 'bundled snapshot';
@@ -47,8 +64,8 @@
     } catch (e) {
       console.warn('Live database unavailable, using bundled snapshot.', e);
     }
-    const [snapshot, world, pipelines] = await Promise.all([
-      data ? null : getJson('data/snapshot.json'), getJson('data/world.json'), getJson('data/pipelines.json')
+    const [snapshot, world] = await Promise.all([
+      data ? null : getJson('data/snapshot.json'), worldP
     ]);
     data = data || snapshot;
 
@@ -74,14 +91,13 @@
     window.TYP = {};
     data.category_defaults.forEach(c => { window.TYP[c.category] = [c.typical_supplied_by || '', c.typical_delivers_to || '']; });
     window.WORLD = world;
-    window.GEM = pipelines;
     window.NEWS = data.news || [];
     window.PROPOSALS = data.proposals || [];
     window.VESSELS = data.vessels || [];
     window.SAT = 'img/satellite.jpg';
 
     const s = document.createElement('script');
-    s.src = 'js/app.js?v=8';
+    s.src = 'js/app.js?v=9';
     s.onerror = () => { note.textContent = 'The map code did not load. Reload the page.'; };
     document.body.appendChild(s);
   } catch (e) {
