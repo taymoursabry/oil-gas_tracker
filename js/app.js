@@ -29,7 +29,7 @@ const KIND={ref:'Refinery',lngx:'LNG export plant',lngi:'LNG import terminal',fs
 const GL={sq:'<rect class="g" x="-5" y="-5" width="10" height="10" rx="1"/>',dia:'<path class="g" d="M0-7L7 0 0 7-7 0Z"/>',tri:'<path class="g" d="M-6.5-5H6.5L0 6.5Z"/>',hull:'<path class="g" d="M-8.5-3.5H8.5L5.5 3.5H-6.5Z"/>',ring:'<circle class="g" r="5"/><circle r="1.8" fill="var(--halo)"/>',hex:'<path class="g" d="M-6 0L-3-5.2H3L6 0 3 5.2H-3Z"/>',dot:'<circle class="g" r="4"/>',x:'<path class="g" d="M-5-5L5 5M5-5L-5 5" style="stroke:var(--choke);stroke-width:3;fill:none"/>',bolt:'<path class="g" d="M1.5-8.5L-5.5 1H-.5L-1.5 8.5L5.5-1H.5Z"/>',ship:'<path d="M-7 0L-3-3H5L7 0 5 3H-3Z" fill="var(--ink)"/>'};
 const ALL=Object.keys(CATS),S4=['o','c','p','x'];
 const GASCHAIN=['gas','ons','pgas','netg','rlng','ships','lngx','lngi','fsru','choke','pwr'];
-const on={cats:new Set(GASCHAIN),st:new Set(S4),cap:0,year:2026,fend:0,chk:false};
+const on={cats:new Set(ALL.filter(k=>CATS[k].line!==4)),st:new Set(S4),cap:0,year:2026,fend:0,chk:false};
 const svg=d3.select('#map'),root=d3.select('#root');
 // ---- index and links
 const IDX=new Map();PTS.forEach(p=>{p.isP=true;IDX.set(p.name,p)});LNS.forEach(l=>IDX.set(l.name,l));
@@ -74,8 +74,9 @@ LNS.filter(l=>CATS[l.cat].line===2).forEach((l,li)=>{l.lens=l.segs.map(s=>s.getT
   for(let k=0;k<n;k++){const el=gs.append('path').attr('class','ship').attr('d','M-6 0L-2.5-2.6H4L6 0 4 2.6H-2.5Z').attr('fill','var('+CATS[l.cat].c+')');
     const s={l,el:el.node(),off:(k+((li*37)%10)/10)/n};el.on('click',e=>{e.stopPropagation();showShip(s)});SHIPS.push(s)}});
 function along(l,t){let d=t*l.tot;for(let i=0;i<l.segs.length;i++){if(d<=l.lens[i]){const a=l.segs[i].getPointAtLength(d),b=l.segs[i].getPointAtLength(Math.min(l.lens[i],d+.6));return[a.x,a.y,Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI]}d-=l.lens[i]}const e=l.segs[l.segs.length-1].getPointAtLength(1e9);return[e.x,e.y,0]}
-let K=1,MS=1;const T0=performance.now();
-function tickShips(now){const t=(now-T0)/1000;for(const s of SHIPS){if(s.el.style.display==='none')continue;const p=along(s.l,(s.off+t*0.55/s.l.tot)%1);
+let K=1,MS=1;const T0=performance.now();const COV=new Set(),CELL=14; // map cells (about 2.5 degrees) that hold a live vessel
+function tickShips(now){const t=(now-T0)/1000;for(const s of SHIPS){if(!s.show){continue}const p=along(s.l,(s.off+t*0.55/s.l.tot)%1);
+  if(COV.size){const cx=Math.floor(p[0]/CELL),cy=Math.floor(p[1]/CELL);let c=false;for(let i=-1;i<=1&&!c;i++)for(let j=-1;j<=1;j++)if(COV.has((cx+i)+','+(cy+j))){c=true;break}s.el.style.display=c?'none':'';if(c)continue}
   s.el.setAttribute('transform','translate('+p[0]+','+p[1]+') rotate('+p[2]+') scale('+MS*.95+')')}}
 const still=matchMedia('(prefers-reduced-motion:reduce)').matches;let last=0;
 function loop(n){if(n-last>70){last=n;tickShips(n)}requestAnimationFrame(loop)}
@@ -177,7 +178,7 @@ function apply(){
   for(const l of LNS){const s=l.es=est(l);const h=HL.has(l);l.vis=(on.cats.has(l.cat)&&on.st.has(s)&&!on.chk)||h;
     const lit=tracing?h:(FOCUS&&FOCUS.set.has(l));
     for(const e of l.segs)e.setAttribute('class','ln '+l.cat+' st-'+s+(s!==l.st?' new':'')+(lit?' hl':'')+(lit&&!tracing?' soft':''));for(const e of l.els)e.style.display=l.vis?'':'none'}
-  for(const s of SHIPS)s.el.style.display=(on.cats.has('ships')&&s.l.vis&&!tracing&&!LIVE.length)?'':'none';
+  for(const s of SHIPS){s.show=on.cats.has('ships')&&s.l.vis&&!tracing;s.el.style.display=s.show?'':'none'}if(still)tickShips(T0);
   drawLive();drawRef();
   for(const k of['l','g'])for(const st of['o','c','p','x']){const el=document.getElementById('gem_'+k+st);if(el)el.style.display=(on.cats.has(k==='g'?'netg':'neto')&&on.st.has(st))?'':'none'}
   svg.classed('tracing',tracing||!!FOCUS).classed('focus',!!FOCUS&&!tracing).classed('hlab',tracing?HL.size<=10:(!!FOCUS&&FOCUS.set.size<=40));
@@ -236,7 +237,7 @@ function showLine(l,fly){sel=null;if(!FOCUS)CEL.forEach(c=>c.el.classList.remove
   openCard(KIND[l.cat],CATS[l.cat].c,'<h2>'+esc(l.name)+'</h2><span class="tag">'+(sea?'Active trade lane':STN[l.st])+'</span><dl>'+row(sea?'Volume':'Capacity',l.cap)+((l.st==='c'||l.st==='p')?row('Start-up',l.yr?'Target '+l.yr+' (verify)':'No firm date'):'')+'</dl>'+ioBlock(l)+newsBlock(l)+(l.note?'<p class="notep">'+esc(l.note)+'</p>':'')+
    '<p class="fine">Drawn schematically. For the surveyed route, switch on the full pipeline network layer.</p>'+srcBlock(l));
   setHash(l.id);apply();if(fly){const a=l.paths.flat();fit([d3.min(a,d=>d[0])-3,d3.min(a,d=>d[1])-3,d3.max(a,d=>d[0])+3,d3.max(a,d=>d[1])+3])}}
-function showShip(s){const v=VT[s.l.cat];sel=null;HL=new Set();tracing=false;openCard(v[0]+' (simulated)',CATS[s.l.cat].c,'<h2>'+v[0]+' on '+esc(s.l.name)+'</h2><span class="tag">Illustrative, not a tracked vessel</span><dl>'+row('Lane volume',s.l.cap)+'</dl><p class="notep">'+v[1]+' '+esc(s.l.note)+'</p><p class="fine">Live ship positions need a paid tracking feed.</p>');apply()}
+function showShip(s){const v=VT[s.l.cat];sel=null;HL=new Set();tracing=false;openCard(v[0]+' (simulated)',CATS[s.l.cat].c,'<h2>'+v[0]+' on '+esc(s.l.name)+'</h2><span class="tag">Illustrative, not a tracked vessel</span><dl>'+row('Lane volume',s.l.cap)+'</dl><p class="notep">'+v[1]+' '+esc(s.l.note)+'</p><p class="fine">Simulated ships appear only where the free live feed has no receivers. Live positions there need a paid tracking feed with satellite coverage.</p>');apply()}
 function fmt(n,u){return n?n+' '+u:'None'}
 function countryMembers(n){const c=CEL.get(n);const set=new Set(PTS.filter(p=>p.country.split(' / ').includes(n)));
   // chokepoints carry no country: include those that sit inside the border
@@ -342,9 +343,9 @@ const VCOL={tanker:'--crude',crude:'--crude',lng:'--gas',product:'--prod',rig:'-
 const VNAME={tanker:'Tanker',crude:'Crude tanker',lng:'LNG carrier',product:'Product tanker',rig:'Drilling rig',fsru:'Floating terminal',other:'Vessel'};
 function setVessels(rows){
   LIVE=(rows||[]).filter(v=>v.lat!=null&&v.lon!=null).map(v=>{const o=Object.assign({},v,{x:X(+v.lon),y:Y(+v.lat)});o.kind=v.kind||(/\bLNG\b|GAS|FSRU/i.test(v.name||'')?'lng':'tanker');return o});
-  liveAt=LIVE.length?d3.max(LIVE,v=>v.updated_at):null;
-  const lab=document.querySelector('#groups input[value="ships"]');if(lab){lab.parentNode.querySelector('b').textContent=LIVE.length?'Vessels (live positions)':'Vessels (simulated)';lab.parentNode.querySelector('em').textContent=(LIVE.length||SHIPS.length).toLocaleString()}
-  document.getElementById('note').textContent=(LIVE.length?LIVE.length+' live vessel positions, last update '+new Date(liveAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'. Coastal coverage only':'Vessels simulated')+'. Figures approximate. Data: '+(window.DATA_SOURCE||'bundled snapshot')+'.';
+  liveAt=LIVE.length?d3.max(LIVE,v=>v.updated_at):null;COV.clear();for(const v of LIVE)COV.add(Math.floor(v.x/CELL)+','+Math.floor(v.y/CELL));gs.classed('sim',LIVE.length>0);
+  const lab=document.querySelector('#groups input[value="ships"]');if(lab){lab.parentNode.querySelector('b').textContent=LIVE.length?'Vessels (live, simulated where no coverage)':'Vessels (simulated)';lab.parentNode.querySelector('em').textContent=(LIVE.length||SHIPS.length).toLocaleString()}
+  document.getElementById('note').textContent=(LIVE.length?LIVE.length+' live vessel positions, last update '+new Date(liveAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'. Faded ships are simulated, shown where no live signal exists':'Vessels simulated')+'. Figures approximate. Data: '+(window.DATA_SOURCE||'bundled snapshot')+'.';
   drawLive(true);scaleMarks();apply()}
 const NAVS={0:'Under way',1:'At anchor',2:'Not under command',3:'Restricted manoeuvrability',4:'Constrained by draught',5:'Moored',6:'Aground',8:'Under way'};
 function sizeClass(v){const L=+v.length_m;if(!L)return'';if(v.kind==='lng')return L>=310?'Q-Max or Q-Flex class':L>=270?'Standard large LNG carrier':'Small or mid-size gas carrier';
