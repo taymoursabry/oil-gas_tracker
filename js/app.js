@@ -78,8 +78,8 @@ function tickShips(now){const t=(now-T0)/1000;for(const s of SHIPS){if(s.el.styl
 const still=matchMedia('(prefers-reduced-motion:reduce)').matches;let last=0;
 function loop(n){if(n-last>70){last=n;tickShips(n)}requestAnimationFrame(loop)}
 // ---- zoom, sizing, clustering
-const gc=d3.select('#clus');let CL=[];
-const zoom=d3.zoom().scaleExtent([.3,90]).on('zoom',e=>{root.attr('transform',e.transform);K=e.transform.k;scaleMarks()}).on('end',()=>{cluster();tiles();renderAn()});
+const gc=d3.select('#clus');let CL=[],zq=0;
+const zoom=d3.zoom().scaleExtent([.3,90]).on('start',()=>svg.classed('mv',true)).on('zoom',e=>{root.attr('transform',e.transform);K=e.transform.k;if(!zq){zq=1;requestAnimationFrame(()=>{zq=0;scaleMarks()})}}).on('end',()=>{svg.classed('mv',false);drawLive();cluster();tiles();renderAn()});
 svg.call(zoom).on('dblclick.zoom',null);
 // ---- satellite tiles: Sentinel-2 cloudless (EOX), sharpens as you zoom, about 10 metres per pixel at full zoom
 const ZMAX=8000,ESRI='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/',TILE='https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless/default/WGS84/';
@@ -113,7 +113,7 @@ function tiles(){
 function scaleMarks(){MS=Math.max(.5,Math.min(1.25,.45+K*.11))/K;
   for(const p of PTS)p.el.setAttribute('transform','translate('+p.x+','+p.y+') scale('+MS*p.sf+')');
   for(const c of CL)c.el.setAttribute('transform','translate('+c.x+','+c.y+') scale('+1/K+')');
-  for(const v of LIVE)v.el.setAttribute('transform','translate('+v.x+','+v.y+') rotate('+((v.course==null?90:+v.course)-90)+') scale('+MS*1.15+')');
+  for(const v of SHOWN)v.el.setAttribute('transform','translate('+v.x+','+v.y+') rotate('+((v.course==null?90:+v.course)-90)+') scale('+MS*1.15+')');
   svg.classed('lab',K>=4.5).classed('far',K<1.6);if(still)tickShips(T0)}
 function cluster(){gc.selectAll('*').remove();CL=[];for(const p of PTS)p.cl=false;
   if(K<5&&!tracing&&!FOCUS){const cell=34/K,m=new Map();
@@ -145,7 +145,7 @@ function apply(){
     const lit=tracing?h:(FOCUS&&FOCUS.set.has(l));
     for(const e of l.segs)e.setAttribute('class','ln '+l.cat+' st-'+s+(s!==l.st?' new':'')+(lit?' hl':'')+(lit&&!tracing?' soft':''));for(const e of l.els)e.style.display=l.vis?'':'none'}
   for(const s of SHIPS)s.el.style.display=(on.cats.has('ships')&&s.l.vis&&!tracing&&!LIVE.length)?'':'none';
-  for(const v of LIVE)v.el.style.display=(on.cats.has('ships')&&!tracing)?'':'none';
+  drawLive();
   document.getElementById('gemg').style.display=on.cats.has('netg')?'':'none';document.getElementById('geml').style.display=on.cats.has('neto')?'':'none';
   svg.classed('tracing',tracing||!!FOCUS).classed('focus',!!FOCUS&&!tracing).classed('hlab',tracing?HL.size<=10:(!!FOCUS&&FOCUS.set.size<=40));
   focusUi();
@@ -272,12 +272,16 @@ function newsBlock(o){const a=(NEWSBY.get(o.name)||[]).slice().sort((x,y)=>(y.pu
   return a.length?'<div class="notep"><div class="io"><h4>Latest news</h4><ul class="al">'+a.slice(0,4).map(n=>newsItem(n)).join('')+'</ul></div></div>':''}
 const FIELD={status:'Status',startup_year:'Start-up year',charter_end_year:'Charter end',capacity_text:'Capacity',operator:'Operator',vessel_owner:'Vessel owner',charterer:'Charterer',note:'Note'};
 const fval=(f,v)=>f==='status'?(STN[v]||v):(v==null||v===''?'none':v);
-let LIVE=[],liveAt=null;const glv=d3.select('#live');
+let LIVE=[],SHOWN=[],liveAt=null;const glv=d3.select('#live'),LCAP=350;
+// Only vessels inside the window get an element, capped, so thousands of positions do not slow panning.
+function drawLive(){glv.selectAll('*').remove();SHOWN=[];if(!LIVE.length||!on.cats.has('ships')||tracing)return;
+  const t=d3.zoomTransform(svg.node()),[w,h]=size(),x0=-t.x/t.k,x1=(w-t.x)/t.k,y0=-t.y/t.k,y1=(h-t.y)/t.k;
+  const inv=LIVE.filter(v=>v.x>=x0&&v.x<=x1&&v.y>=y0&&v.y<=y1),st=Math.ceil(inv.length/LCAP);
+  for(let i=0;i<inv.length;i+=st){const o=inv[i];o.el=glv.append('path').attr('class','ship lv').attr('d','M-6 0L-2.5-2.8H4L6.5 0 4 2.8H-2.5Z').attr('fill','var('+(VCOL[o.kind]||'--port')+')').attr('transform','translate('+o.x+','+o.y+') rotate('+((o.course==null?90:+o.course)-90)+') scale('+MS*1.15+')').on('click',e=>{e.stopPropagation();showVessel(o)}).node();SHOWN.push(o)}}
 const VCOL={tanker:'--crude',crude:'--crude',lng:'--gas',product:'--prod',rig:'--choke',fsru:'--fsru'};
 const VNAME={tanker:'Tanker',crude:'Crude tanker',lng:'LNG carrier',product:'Product tanker',rig:'Drilling rig',fsru:'Floating terminal',other:'Vessel'};
-function setVessels(rows){glv.selectAll('*').remove();
-  LIVE=(rows||[]).filter(v=>v.lat!=null&&v.lon!=null).map(v=>{const o=Object.assign({},v,{x:X(+v.lon),y:Y(+v.lat)});o.kind=v.kind||(/\bLNG\b|GAS|FSRU/i.test(v.name||'')?'lng':'tanker');
-    o.el=glv.append('path').attr('class','ship lv').attr('d','M-6 0L-2.5-2.8H4L6.5 0 4 2.8H-2.5Z').attr('fill','var('+(VCOL[o.kind]||'--port')+')').on('click',e=>{e.stopPropagation();showVessel(o)}).node();return o});
+function setVessels(rows){
+  LIVE=(rows||[]).filter(v=>v.lat!=null&&v.lon!=null).map(v=>{const o=Object.assign({},v,{x:X(+v.lon),y:Y(+v.lat)});o.kind=v.kind||(/\bLNG\b|GAS|FSRU/i.test(v.name||'')?'lng':'tanker');return o});
   liveAt=LIVE.length?d3.max(LIVE,v=>v.updated_at):null;
   const lab=document.querySelector('#groups input[value="ships"]');if(lab){lab.parentNode.querySelector('b').textContent=LIVE.length?'Vessels (live positions)':'Vessels (simulated)';lab.parentNode.querySelector('em').textContent=(LIVE.length||SHIPS.length).toLocaleString()}
   document.getElementById('note').textContent=(LIVE.length?LIVE.length+' live vessel positions, last update '+new Date(liveAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'. Coastal coverage only':'Vessels simulated')+'. Figures approximate. Data: '+(window.DATA_SOURCE||'bundled snapshot')+'.';
