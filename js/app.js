@@ -77,6 +77,18 @@ function tickShips(now){const t=(now-T0)/1000;for(const s of SHIPS){if(s.el.styl
   s.el.setAttribute('transform','translate('+p[0]+','+p[1]+') rotate('+p[2]+') scale('+MS*.95+')')}}
 const still=matchMedia('(prefers-reduced-motion:reduce)').matches;let last=0;
 function loop(n){if(n-last>70){last=n;tickShips(n)}requestAnimationFrame(loop)}
+// ---- click on the dense pipeline network: nearest route to the pointer
+const NET=[];[['g',GEM.g],['l',GEM.l]].forEach(([k,arr])=>arr.forEach(a=>{let lo=a[0],la=a[1];const ll=[[lo/100,la/100]];for(let i=2;i<a.length;i+=2){lo+=a[i];la+=a[i+1];ll.push([lo/100,la/100])}
+  const pts=ll.map(q=>[X(q[0]),Y(q[1])]);NET.push({k,ll,pts,x0:d3.min(pts,q=>q[0]),x1:d3.max(pts,q=>q[0]),y0:d3.min(pts,q=>q[1]),y1:d3.max(pts,q=>q[1])})}));
+function netHit(mx,my,tol){let best=null,bd=tol*tol;for(const n of NET){if(!on.cats.has(n.k==='g'?'netg':'neto'))continue;if(mx<n.x0-tol||mx>n.x1+tol||my<n.y0-tol||my>n.y1+tol)continue;
+  for(let i=1;i<n.pts.length;i++){const a=n.pts[i-1],b=n.pts[i],dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy;let t=L?((mx-a[0])*dx+(my-a[1])*dy)/L:0;t=Math.max(0,Math.min(1,t));const ex=a[0]+t*dx-mx,ey=a[1]+t*dy-my,d=ex*ex+ey*ey;if(d<bd){bd=d;best=n}}}return best}
+function countryAt(q){for(const[n,c]of CEL){const b=c.b;if(q[0]<b[0][0]||q[0]>b[1][0]||q[1]<b[0][1]||q[1]>b[1][1])continue;if(d3.geoContains(c.f,q))return n}return''}
+function showNet(n){sel=null;HL=new Set();tracing=false;const gas=n.k==='g';let km=0;for(let i=1;i<n.ll.length;i++)km+=d3.geoDistance(n.ll[i-1],n.ll[i])*6371;
+  const A=n.ll[0],B=n.ll[n.ll.length-1],ca=countryAt(A),cb=countryAt(B),fmt=q=>q[1].toFixed(2)+', '+q[0].toFixed(2);
+  const near=PTS.map(p=>[Math.min(d3.geoDistance(A,[p.lon,p.lat]),d3.geoDistance(B,[p.lon,p.lat]))*6371,p]).filter(r=>r[0]<120).sort((x,y)=>x[0]-y[0]).slice(0,5);
+  document.getElementById('nethl').setAttribute('d','M'+n.pts.map(q=>q[0].toFixed(2)+','+q[1].toFixed(2)).join('L'));
+  openCard(gas?'Gas pipeline':'Oil or liquids pipeline',gas?'--gas':'--crude','<h2>'+(gas?'Gas':'Oil or liquids')+' pipeline section</h2><span class="tag">Network layer</span><dl>'+row('Route',ca&&cb?(ca===cb?'Within '+ca:ca+' to '+cb):(ca||cb||'Offshore'))+row('Section length','About '+(km<10?km.toFixed(1):Math.round(km).toLocaleString())+' kilometres')+row('Starts at',fmt(A))+row('Ends at',fmt(B))+row('Nearest mapped assets',near.map(r=>r[1].name+' ('+Math.round(r[0])+' kilometres)').join('; '))+'</dl><p class="fine">This layer holds route geometry only. Name, operator, capacity and status are not in the dataset for this section. Major pipelines with full details are in the named pipeline layers. Length is measured along the drawn route and is approximate.</p>');apply()}
+svg.node().addEventListener('click',e=>{const t=e.target;if(t.closest&&t.closest('#marks,#live,#ships,#clus,#lines'))return;const m=d3.pointer(e,root.node()),n=netHit(m[0],m[1],7/K);if(n){e.stopPropagation();showNet(n)}},true);
 // ---- zoom, sizing, clustering
 const gc=d3.select('#clus');let CL=[],zq=0;
 const zoom=d3.zoom().scaleExtent([.3,90]).on('start',()=>svg.classed('mv',true)).on('zoom',e=>{root.attr('transform',e.transform);K=e.transform.k;if(!zq){zq=1;requestAnimationFrame(()=>{zq=0;scaleMarks()})}}).on('end',()=>{svg.classed('mv',false);drawLive();cluster();tiles();renderAn()});
@@ -183,7 +195,7 @@ const REG={'World':[-170,-58,180,78],'Middle East Gulf':[44,21,62,32],'Egypt and
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function openCard(kind,color,html){document.getElementById('ckind').innerHTML='<span class="tag kind" style="background:var('+color+');margin:0">'+kind+'</span>';
   document.getElementById('cbody').innerHTML=html;document.getElementById('card').style.display='flex';document.getElementById('cbody').scrollTop=0;if(innerWidth<=860){togF(false);if(A.open)togA(false)}}
-function closeCard(quiet){document.getElementById('card').style.display='none';document.getElementById('card').classList.remove('tall');setHash('');A.co=null;sel=null;HL=new Set();tracing=false;if(!FOCUS)CEL.forEach(c=>c.el.classList.remove('csel'));if(quiet!==true)apply()}
+function closeCard(quiet){document.getElementById('nethl').removeAttribute('d');if(typeof selV!=='undefined'&&selV){selV=null;document.querySelectorAll('.lvg.on').forEach(e=>e.classList.remove('on'))}document.getElementById('card').style.display='none';document.getElementById('card').classList.remove('tall');setHash('');A.co=null;sel=null;HL=new Set();tracing=false;if(!FOCUS)CEL.forEach(c=>c.el.classList.remove('csel'));if(quiet!==true)apply()}
 function row(k,v){return v?'<dt>'+k+'</dt><dd>'+esc(v)+'</dd>':''}
 function linkList(title,arr,typ){let items=arr;let cls='';if(!items.length){if(!typ)return'';items=[typ];cls=' class="typ"'}
   return'<div class="io"><h4>'+title+'</h4><ul'+cls+'>'+items.map(t=>{const o=IDX.get(t);return o?'<li><button class="lk" data-n="'+esc(t)+'">'+esc(t)+'</button><span>'+KIND[o.cat]+'</span></li>':'<li>'+esc(t)+'</li>'}).join('')+'</ul></div>'}
@@ -272,12 +284,13 @@ function newsBlock(o){const a=(NEWSBY.get(o.name)||[]).slice().sort((x,y)=>(y.pu
   return a.length?'<div class="notep"><div class="io"><h4>Latest news</h4><ul class="al">'+a.slice(0,4).map(n=>newsItem(n)).join('')+'</ul></div></div>':''}
 const FIELD={status:'Status',startup_year:'Start-up year',charter_end_year:'Charter end',capacity_text:'Capacity',operator:'Operator',vessel_owner:'Vessel owner',charterer:'Charterer',note:'Note'};
 const fval=(f,v)=>f==='status'?(STN[v]||v):(v==null||v===''?'none':v);
-let LIVE=[],SHOWN=[],liveAt=null;const glv=d3.select('#live'),LCAP=350;
+let LIVE=[],SHOWN=[],liveAt=null,selV=null;const glv=d3.select('#live'),LCAP=350;
 // Only vessels inside the window get an element, capped, so thousands of positions do not slow panning.
-function drawLive(){glv.selectAll('*').remove();SHOWN=[];if(!LIVE.length||!on.cats.has('ships')||tracing)return;
-  const t=d3.zoomTransform(svg.node()),[w,h]=size(),x0=-t.x/t.k,x1=(w-t.x)/t.k,y0=-t.y/t.k,y1=(h-t.y)/t.k;
+function drawLive(force){const t=d3.zoomTransform(svg.node()),sig=[t.x,t.y,t.k,on.cats.has('ships'),tracing,LIVE.length].join();if(!force&&sig===glv.attr('data-sig'))return;glv.attr('data-sig',sig);
+  glv.selectAll('*').remove();SHOWN=[];if(!LIVE.length||!on.cats.has('ships')||tracing)return;
+  const [w,h]=size(),x0=-t.x/t.k,x1=(w-t.x)/t.k,y0=-t.y/t.k,y1=(h-t.y)/t.k;
   const inv=LIVE.filter(v=>v.x>=x0&&v.x<=x1&&v.y>=y0&&v.y<=y1),st=Math.ceil(inv.length/LCAP);
-  for(let i=0;i<inv.length;i+=st){const o=inv[i];o.el=glv.append('path').attr('class','ship lv').attr('d','M-6 0L-2.5-2.8H4L6.5 0 4 2.8H-2.5Z').attr('fill','var('+(VCOL[o.kind]||'--port')+')').attr('transform','translate('+o.x+','+o.y+') rotate('+((o.course==null?90:+o.course)-90)+') scale('+MS*1.15+')').on('click',e=>{e.stopPropagation();showVessel(o)}).node();SHOWN.push(o)}}
+  for(let i=0;i<inv.length;i+=st){const o=inv[i];o.el=glv.append('g').attr('class','lvg'+(o===selV?' on':'')).html('<circle r="11" fill="transparent"/><path class="ship lv" d="M-6 0L-2.5-2.8H4L6.5 0 4 2.8H-2.5Z" fill="var('+(VCOL[o.kind]||'--port')+')"/>').attr('transform','translate('+o.x+','+o.y+') rotate('+((o.course==null?90:+o.course)-90)+') scale('+MS*1.15+')').on('click',e=>{e.stopPropagation();showVessel(o)}).node();SHOWN.push(o)}}
 const VCOL={tanker:'--crude',crude:'--crude',lng:'--gas',product:'--prod',rig:'--choke',fsru:'--fsru'};
 const VNAME={tanker:'Tanker',crude:'Crude tanker',lng:'LNG carrier',product:'Product tanker',rig:'Drilling rig',fsru:'Floating terminal',other:'Vessel'};
 function setVessels(rows){
@@ -285,9 +298,14 @@ function setVessels(rows){
   liveAt=LIVE.length?d3.max(LIVE,v=>v.updated_at):null;
   const lab=document.querySelector('#groups input[value="ships"]');if(lab){lab.parentNode.querySelector('b').textContent=LIVE.length?'Vessels (live positions)':'Vessels (simulated)';lab.parentNode.querySelector('em').textContent=(LIVE.length||SHIPS.length).toLocaleString()}
   document.getElementById('note').textContent=(LIVE.length?LIVE.length+' live vessel positions, last update '+new Date(liveAt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'. Coastal coverage only':'Vessels simulated')+'. Figures approximate. Data: '+(window.DATA_SOURCE||'bundled snapshot')+'.';
-  scaleMarks();apply()}
-function showVessel(v){sel=null;HL=new Set();tracing=false;const mins=Math.round((Date.now()-new Date(v.updated_at))/6e4);
-  openCard(VNAME[v.kind]||'Vessel',VCOL[v.kind]||'--port','<h2>'+esc(v.name||('Vessel '+v.mmsi))+'</h2><span class="tag">Live position</span><dl>'+row('Type',VNAME[v.kind]||v.ship_type)+row('Speed',v.speed!=null?(+v.speed).toFixed(1)+' knots':'')+row('Heading',v.course!=null?Math.round(v.course)+' degrees':'')+row('Destination',v.destination)+row('Last seen',mins<90?mins+' minutes ago':Math.round(mins/60)+' hours ago')+row('Position',(+v.lat).toFixed(3)+', '+(+v.lon).toFixed(3))+row('Identifier',v.mmsi)+'</dl><p class="fine">Position broadcast by the vessel and received by shore stations. Destination is typed in by the crew and is often out of date.</p>');apply()}
+  drawLive(true);scaleMarks();apply()}
+const NAVS={0:'Under way',1:'At anchor',2:'Not under command',3:'Restricted manoeuvrability',4:'Constrained by draught',5:'Moored',6:'Aground',8:'Under way'};
+function sizeClass(v){const L=+v.length_m;if(!L)return'';if(v.kind==='lng')return L>=310?'Q-Max or Q-Flex class':L>=270?'Standard large LNG carrier':'Small or mid-size gas carrier';
+  return L>=320?'Very large crude carrier, about 2 million barrels':L>=265?'Suezmax, about 1 million barrels':L>=230?'Aframax or long-range product tanker':L>=170?'Medium-range tanker':'Small or coastal tanker'}
+function showVessel(v){sel=null;HL=new Set();tracing=false;selV=v;document.querySelectorAll('.lvg.on').forEach(e=>e.classList.remove('on'));if(v.el)v.el.classList.add('on');const mins=Math.round((Date.now()-new Date(v.updated_at))/6e4);
+  const eta=v.eta?(()=>{const m=/^(\d\d)-(\d\d) (\d\d:\d\d)$/.exec(v.eta);return m?(+m[2])+' '+['January','February','March','April','May','June','July','August','September','October','November','December'][+m[1]-1]+', '+m[3]+' universal time':v.eta})():'';
+  const st=v.nav_status!=null&&NAVS[v.nav_status]?NAVS[v.nav_status]:(v.speed!=null?(+v.speed<0.5?'Stopped':'Under way'):'');
+  openCard(VNAME[v.kind]||'Vessel',VCOL[v.kind]||'--port','<h2>'+esc(v.name||('Vessel '+v.mmsi))+'</h2><span class="tag">Live position</span><dl>'+row('Type',VNAME[v.kind]||v.ship_type)+row('Size class',sizeClass(v))+row('Status',st)+row('Speed',v.speed!=null?(+v.speed).toFixed(1)+' knots':'')+row('Heading',v.course!=null&&+v.course<360?Math.round(v.course)+' degrees':'')+row('Destination',v.destination)+row('Arrival (crew estimate)',eta)+row('Length and beam',v.length_m?Math.round(v.length_m)+' by '+Math.round(v.beam_m||0)+' metres':'')+row('Draught',v.draught_m?(+v.draught_m).toFixed(1)+' metres':'')+row('Last seen',mins<90?mins+' minutes ago':Math.round(mins/60)+' hours ago')+row('Position',(+v.lat).toFixed(3)+', '+(+v.lon).toFixed(3))+row('Ship number (IMO)',v.imo)+row('Radio identifier (MMSI)',v.mmsi)+row('Call sign',v.callsign)+'</dl><p><a href="https://www.marinetraffic.com/en/ais/details/ships/mmsi:'+encodeURIComponent(v.mmsi)+'" target="_blank" rel="noopener">Open on MarineTraffic</a> for owner, flag and voyage history.</p><p class="fine">Broadcast by the vessel and received by shore stations. Destination, arrival and draught are typed in by the crew and are often out of date. Size class is estimated from length.</p>');apply()}
 if(window.TRACKER_REFRESH_VESSELS)setInterval(()=>{if(document.hidden)return;window.TRACKER_REFRESH_VESSELS().then(r=>{if(r)setVessels(r)}).catch(()=>{})},60000);
 // ---- satellite modes
 const SATM={mode:'sharp',date:null};

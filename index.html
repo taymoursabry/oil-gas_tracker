@@ -44,7 +44,7 @@ svg#map:active{cursor:grabbing}
 .mk.st-c .g{fill-opacity:.25;stroke:var(--c);stroke-width:1.8;stroke-dasharray:3 2}
 .mk.st-p .g{fill:none;stroke:var(--c);stroke-width:1.6;stroke-dasharray:1.2 2.2}
 .mk.st-x .g{fill:var(--off)}
-.mk text{font:500 11px "Barlow Semi Condensed",Barlow,sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--halo);stroke-width:3px;stroke-linejoin:round;display:none;pointer-events:none}
+.mk text{font:500 11px "Barlow Semi Condensed",Barlow,sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--halo);stroke-width:3px;stroke-linejoin:round;display:none;pointer-events:auto;cursor:pointer}
 .lab .mk text{display:block}
 .mk.new .g{stroke:var(--ink);stroke-width:2.2}
 .ln.new{stroke-width:3.2}
@@ -142,6 +142,7 @@ input[type=range]{width:100%;accent-color:var(--ink)}
 #satctl p{margin:0;font-size:12.5px;color:var(--mute);flex-basis:100%}
 #satdate{height:38px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;padding:0 8px}
 .ship.lv{stroke-width:1}
+.lvg{cursor:pointer;pointer-events:auto}.lvg.on .ship{stroke:var(--ink);stroke-width:2.2}
 .mv #gem,.mv #cb{display:none}
 .mv .hit{pointer-events:none}
 #focusbar{display:flex;gap:8px;align-items:center;justify-content:space-between;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:10px;font-size:13.5px}
@@ -188,7 +189,7 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
   <g id="tiles"></g>
   <g id="ctry"></g><path class="cb" id="cb"/>
   <g id="gem"><path id="geml" class="gem l"/><path id="gemg" class="gem g"/></g>
-  <g id="lines"></g><g id="ships"></g><g id="live"></g><g id="marks"></g><g id="clus"></g>
+  <path id="nethl" class="ln" style="stroke:var(--ink);stroke-width:3.5;pointer-events:none;opacity:.9"/><g id="lines"></g><g id="ships"></g><g id="marks"></g><g id="live"></g><g id="clus"></g>
 </g></svg>
 
 <div id="top">
@@ -244,7 +245,7 @@ dt{color:var(--mute);font-size:13px}dd{margin:0}
 
 <script src="vendor/d3.min.js"></script>
 <script src="vendor/topojson-client.min.js"></script>
-<script src="js/config.js?v=7"></script>
-<script src="js/loader.js?v=7"></script>
+<script src="js/config.js?v=8"></script>
+<script src="js/loader.js?v=8"></script>
 </body>
 </html>
