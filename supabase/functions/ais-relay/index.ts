@@ -17,7 +17,8 @@ const BOXES = [
 ];
 const TANKER = (t: number) => t >= 80 && t <= 89;
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  const probe = new URL(req.url).searchParams.get('probe') === '1';
   const key = Deno.env.get('AISSTREAM_API_KEY');
   if (!key) return new Response('AISSTREAM_API_KEY is not set', { status: 500 });
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -53,6 +54,20 @@ Deno.serve(async () => {
     };
   });
 
+  if (probe) {
+    // Diagnostic: raw positions heard per watched area, regardless of ship type, plus how many had identity.
+    const per: Record<string, { heard: number; with_static: number; tankers: number }> = {};
+    for (const p of pos.values()) {
+      const la = p.lat as number, lo = p.lon as number;
+      const i = BOXES.findIndex((b) => la >= b[0][0] && la <= b[1][0] && lo >= b[0][1] && lo <= b[1][1]);
+      const k = i < 0 ? 'outside' : String(i);
+      per[k] = per[k] || { heard: 0, with_static: 0, tankers: 0 };
+      per[k].heard++;
+      const s = stat.get(p.mmsi as number);
+      if (s) { per[k].with_static++; if (TANKER(s.ship_type as number)) per[k].tankers++; }
+    }
+    return Response.json({ heard: pos.size, statics: stat.size, per_box: per });
+  }
   // Static data first, so ship type is known. Then positions.
   const statics = [...stat.values()].filter((s) => TANKER(s.ship_type as number));
   const chunks = <T>(a: T[], n = 500) => Array.from({ length: Math.ceil(a.length / n) }, (_, i) => a.slice(i * n, i * n + n));
